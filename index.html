@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#111318" />
+  <meta name="theme-color" content="#f8eef5" />
   <meta name="description" content="Prototype PWA untuk membaca artikel Jepang dan menghafal kosakata JLPT N1/N2." />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon-192.png" />
   <link rel="stylesheet" href="styles.css" />
-  <title>語彙Lab N1/N2</title>
+  <title>GoiScope N1/N2</title>
 </head>
 <body>
   <div class="app-shell">
@@ -16,8 +16,8 @@
       <div class="brand">
         <div class="brand-mark">語</div>
         <div>
-          <strong>語彙Lab</strong>
-          <span>N1 / N2 Article Trainer</span>
+          <strong>GoiScope</strong>
+          <span>N1 / N2 Sakura Study App</span>
         </div>
       </div>
 
@@ -39,7 +39,7 @@
     <main class="main">
       <header class="topbar">
         <div>
-          <small>JLPT ADVANCED VOCABULARY</small>
+          <small>JLPT ADVANCED VOCABULARY • Sakura Mode</small>
           <h1 id="viewTitle">Dashboard</h1>
         </div>
         <div class="top-actions">
@@ -95,7 +95,7 @@
               <small>ARTICLE IMPORT</small>
               <h3>Masukkan artikel Jepang</h3>
             </div>
-            <div class="pill">Prototype lokal</div>
+            <div class="pill">PWA + AI Ready</div>
           </div>
           <div class="form-grid">
             <label>Judul
@@ -117,11 +117,33 @@
             <textarea id="articleTextInput" rows="8"></textarea>
           </label>
           <div class="helper">
-            <strong>Catatan prototype:</strong> artikel demo punya terjemahan + furigana lengkap. Artikel kustom tetap bisa dipecah per paragraf dan dideteksi kosakata yang ada di bank demo; terjemahan otomatis penuh memerlukan koneksi AI/backend pada versi berikutnya.
+            <strong>Catatan prototype:</strong> artikel demo punya terjemahan + furigana lengkap. Artikel kustom tetap bisa dipecah per paragraf dan dideteksi kosakata yang ada di bank demo. Di versi ini aku tambahkan <b>konektor AI</b>, jadi nanti PWA bisa mengirim artikel ke backend AI untuk membuat furigana, terjemahan Indonesia, vocabulary, dan deck flashcard otomatis.
+          </div>
+
+          <div class="ai-box">
+            <div class="panel-head wrap">
+              <div>
+                <small>AI CONNECTOR</small>
+                <h3>Analisis dengan AI</h3>
+              </div>
+              <div class="pill" id="aiStatusPill">Belum terhubung</div>
+            </div>
+            <div class="form-grid ai-grid">
+              <label>URL Endpoint AI
+                <input id="aiEndpointInput" placeholder="https://.../analyze" />
+              </label>
+              <label style="justify-content:end">
+                <button id="saveAiConfigBtn" class="secondary top-gap">Simpan Endpoint</button>
+              </label>
+            </div>
+            <div class="helper">
+              Endpoint menerima <b>POST JSON</b> berisi <code>{ title, category, text }</code> dan mengembalikan JSON analisis artikel. Kalau endpoint belum diisi, tombol AI belum bisa memproses artikel kustom.
+            </div>
           </div>
           <div class="button-row">
             <button id="loadDemoBtn" class="secondary">Muat Artikel Demo</button>
             <button id="analyzeBtn" class="primary">Analisis Artikel</button>
+            <button id="analyzeAiBtn" class="primary accent2">Analisis dengan AI</button>
 <button id="articleDeckBtn" class="secondary">Flashcard Artikel Ini</button>
           </div>
         </div>
@@ -197,7 +219,15 @@
               </div>
             </button>
 
+            
+            <div class="flash-nav">
+              <button id="prevFlashBtn" class="secondary nav-mini" aria-label="Kartu sebelumnya">← Prev</button>
+              <button id="flipFlashBtn" class="ghost nav-mini" aria-label="Balik kartu">Flip</button>
+              <button id="nextFlashBtn" class="secondary nav-mini" aria-label="Kartu berikutnya">Next →</button>
+            </div>
+
             <div class="rating-row">
+
               <button data-rating="again" class="rate again">Again</button>
               <button data-rating="hard" class="rate hard">Hard</button>
               <button data-rating="good" class="rate good">Good</button>

@@ -30,6 +30,8 @@ PWA prototype untuk belajar kosakata Jepang tingkat lanjut dari artikel.
 Prototype ini masih frontend lokal. Terjemahan/furigana otomatis untuk artikel kustom penuh akan membutuhkan modul AI/backend di versi berikutnya.
 
 
-## Struktur root
-Versi ini sengaja menaruh `icon-192.png` dan `icon-512.png` langsung di root repository,
-sejajar dengan `index.html`, agar cocok dengan cara upload dari HP.
+## Tambahan di versi ini
+- Tampilan dibuat lebih terang dengan nuansa sakura.
+- Flashcard sekarang punya tombol **Prev / Flip / Next**.
+- Ditambahkan **AI Connector** di halaman artikel.
+- Dua ikon PWA diletakkan langsung di root repository supaya mudah upload dari HP/laptop.

@@ -67,7 +67,9 @@ const state = {
   quizAnswered:false,
   articleDeckIds:[],
   bookmarkOnly:false,
-  weakOnly:false
+  weakOnly:false,
+  currentArticleTitle:"",
+  currentArticleCategory:""
 };
 
 const $ = s => document.querySelector(s);
@@ -94,6 +96,28 @@ function toggleBookmark(id){
   renderVocab();
   renderHome();
 }
+
+function getAIEndpoint(){
+  return localStorage.getItem("goiLabAIEndpoint") || "";
+}
+function setAIEndpoint(value){
+  localStorage.setItem("goiLabAIEndpoint", value || "");
+}
+function syncAIEndpointUI(){
+  const input=$("#aiEndpointInput");
+  const pill=$("#aiStatusPill");
+  const value=getAIEndpoint();
+  if(input) input.value=value;
+  if(pill) pill.textContent=value ? "Endpoint tersimpan" : "Belum terhubung";
+}
+function saveAIConfig(){
+  const value=$("#aiEndpointInput").value.trim();
+  setAIEndpoint(value);
+  syncAIEndpointUI();
+  addActivity(value ? "Menyimpan endpoint AI" : "Mengosongkan endpoint AI");
+  alert(value ? "Endpoint AI disimpan." : "Endpoint AI dikosongkan.");
+}
+
 function addActivity(text){
   const p=loadProgress();
   p.activity.unshift({text,time:new Date().toLocaleString("id-ID")});
@@ -117,6 +141,7 @@ function setView(id){
   if(id==="home") renderHome();
   if(id==="vocab") renderVocab();
   if(id==="flashcards" && !state.weakOnly) buildFlashDeck();
+syncAIEndpointUI();
   if(id==="progress") renderProgress();
 }
 
@@ -156,12 +181,16 @@ function renderHome(){
 }
 
 function loadDemo(){
+  state.currentArticleTitle=DEMO.title;
+  state.currentArticleCategory=DEMO.category;
   $("#articleTitleInput").value=DEMO.title;
   $("#articleCategoryInput").value=DEMO.category;
   $("#articleTextInput").value=DEMO.paragraphs.map(p=>p.jp).join("\n\n");
   renderDemoArticle();
 }
 function renderDemoArticle(){
+  state.currentArticleTitle=DEMO.title;
+  state.currentArticleCategory=DEMO.category;
   state.articleDeckIds=[...new Set(DEMO.paragraphs.flatMap(p=>p.vocab))];
   const cards=DEMO.paragraphs.map((p,i)=>{
     const chips=p.vocab.map(id=>{
@@ -182,10 +211,114 @@ function renderDemoArticle(){
   $$(".go-vocab").forEach(b=>b.addEventListener("click",()=>{setView("vocab");$("#vocabSearch").value=DB.find(v=>v.id===b.dataset.id).word;renderVocab();}));
 }
 
+
+function renderAIArticle(data){
+  const article = normalizeAIResponse(data);
+  state.currentArticleTitle = article.title;
+  state.currentArticleCategory = article.category;
+  const articleVocabObjects = [];
+  const cards = article.paragraphs.map((p, i) => {
+    const vocabArr = (p.vocabulary || p.vocab || []).map(item => {
+      if(typeof item === "string"){
+        const found = DB.find(v => v.id===item || v.word===item);
+        if(found){ articleVocabObjects.push(found); return found; }
+        return null;
+      }
+      if(item && item.word){
+        const existing = DB.find(v => v.word === item.word);
+        const obj = existing || {
+          id: "ai_" + (item.word + "_" + i).replace(/[^\w一-龯ぁ-んァ-ン]/g,""),
+          word: item.word,
+          reading: item.reading || "",
+          meaning: item.meaning || "",
+          level: item.level || "ADV",
+          topic: item.topic || article.category || "経済",
+          nuance: item.nuance || "Vocabulary hasil analisis AI.",
+          similar: item.similar || [],
+          collocations: item.collocations || [],
+          example: item.example || p.japanese || p.jp || "",
+          exampleReading: item.exampleReading || p.furigana || p.reading || "",
+          exampleMeaning: item.exampleMeaning || p.translation || p.id || ""
+        };
+        articleVocabObjects.push(obj);
+        return obj;
+      }
+      return null;
+    }).filter(Boolean);
+
+    return `<article class="paragraph-card">
+      <div class="jp-line">${escapeHtml(p.japanese || p.jp || "")}</div>
+      <div class="furi-line">${escapeHtml(p.furigana || p.reading || "")}</div>
+      <div class="id-line">${escapeHtml(p.translation || p.id || "")}</div>
+      <div class="vocab-chips">${vocabArr.map(v=>`<button class="vocab-chip go-vocab" data-id="${v.id}">${v.word}<span>${v.reading||""}</span></button>`).join("") || '<span class="article-meta">AI belum mengembalikan vocab untuk paragraf ini.</span>'}</div>
+    </article>`;
+  }).join("");
+
+  // merge AI-only words into DB if not already present
+  articleVocabObjects.forEach(v=>{
+    if(!DB.find(x=>x.id===v.id)) DB.push(v);
+  });
+  state.articleDeckIds = [...new Set(articleVocabObjects.map(v=>v.id))];
+
+  $("#articleResult").innerHTML=`<div class="article-doc">
+    <div class="article-header"><div><small>AI ARTICLE ANALYSIS</small><h2>${escapeHtml(article.title || "Hasil Analisis AI")}</h2><div class="article-meta">${escapeHtml(article.category || "")} · ${article.paragraphs.length} paragraf · ${state.articleDeckIds.length} target vocab</div></div></div>
+    ${cards}
+  </div>`;
+  $$(".go-vocab").forEach(b=>b.addEventListener("click",()=>{setView("vocab");$("#vocabSearch").value=(DB.find(v=>v.id===b.dataset.id)||{}).word || "";renderVocab();}));
+  renderVocab();
+  renderHome();
+}
+function normalizeAIResponse(data){
+  return {
+    title: data.title || $("#articleTitleInput").value || "Artikel AI",
+    category: data.category || $("#articleCategoryInput").value || "経済",
+    paragraphs: (data.paragraphs || []).map(p => ({
+      japanese: p.japanese || p.jp || "",
+      furigana: p.furigana || p.reading || "",
+      translation: p.translation || p.id || "",
+      vocabulary: p.vocabulary || p.vocab || []
+    }))
+  };
+}
+async function analyzeWithAI(){
+  const endpoint = getAIEndpoint();
+  const title = $("#articleTitleInput").value.trim();
+  const category = $("#articleCategoryInput").value;
+  const text = $("#articleTextInput").value.trim();
+  if(!text){ alert("Masukkan artikel dulu."); return; }
+  if(!endpoint){
+    alert("Isi dulu URL endpoint AI, lalu tekan Simpan Endpoint.");
+    return;
+  }
+  const btn = $("#analyzeAiBtn");
+  const oldLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Memproses AI...";
+  try{
+    const res = await fetch(endpoint,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ title, category, text })
+    });
+    if(!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    renderAIArticle(data);
+    addActivity("Menganalisis artikel dengan AI");
+  }catch(err){
+    console.error(err);
+    alert("Gagal menghubungi endpoint AI. Pastikan URL endpoint benar dan backend mengembalikan JSON yang sesuai.");
+  }finally{
+    btn.disabled = false;
+    btn.textContent = oldLabel;
+  }
+}
+
 function analyzeCustom(){
   const text=$("#articleTextInput").value.trim();
   if(!text){alert("Masukkan artikel dulu.");return;}
   const pars=text.split(/\n\s*\n/).filter(Boolean);
+  state.currentArticleTitle=$("#articleTitleInput").value||"Artikel Kustom";
+  state.currentArticleCategory=$("#articleCategoryInput").value||"経済";
   const exactDemo = pars.join("\n\n") === DEMO.paragraphs.map(p=>p.jp).join("\n\n");
   if(exactDemo){renderDemoArticle();addActivity("Menganalisis artikel demo ekonomi");return;}
   let customFoundIds=[];
@@ -265,12 +398,24 @@ function buildFlashDeck(){
   state.flashIndex=0;
   renderFlash();
 }
+
+function nextFlash(){
+  if(!state.flashDeck.length) return;
+  state.flashIndex = (state.flashIndex + 1) % state.flashDeck.length;
+  renderFlash();
+}
+function prevFlash(){
+  if(!state.flashDeck.length) return;
+  state.flashIndex = (state.flashIndex - 1 + state.flashDeck.length) % state.flashDeck.length;
+  renderFlash();
+}
+
 function renderFlash(){
   const v=state.flashDeck[state.flashIndex];
   if(!v)return;
   $("#flashCard").classList.remove("flipped");
   $("#flashCounter").textContent=`${state.flashIndex+1} / ${state.flashDeck.length}`;
-  $("#flashTopicBadge").textContent=`${v.topic} · ${v.level}`;
+  $("#flashTopicBadge").textContent=`${v.topic} · ${v.level}` + (state.weakOnly ? " · Weak Review" : (state.articleDeckIds.includes(v.id) ? " · Article Deck" : ""));
   const mode=$("#flashMode").value;
   let label="",prompt="",sub="",answer=v.word,reading=v.reading,meaning=v.meaning;
   if(mode==="kanji-meaning"){label="KANJI → ARTI";prompt=v.word;sub="";answer=v.word;}
@@ -364,6 +509,8 @@ function renderProgress(){
 
 $$(".nav-btn,.go-view").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));
 $("#loadDemoBtn").addEventListener("click",loadDemo);
+$("#saveAiConfigBtn").addEventListener("click",saveAIConfig);
+$("#analyzeAiBtn").addEventListener("click",analyzeWithAI);
 $("#articleDeckBtn").addEventListener("click",openArticleDeck);
 $("#weakReviewBtn").addEventListener("click",openWeakDeck);
 $("#analyzeBtn").addEventListener("click",analyzeCustom);
@@ -375,10 +522,13 @@ $("#flashTopic").addEventListener("change",buildFlashDeck);
 $("#flashMode").addEventListener("change",renderFlash);
 $("#shuffleFlashBtn").addEventListener("click",()=>{state.flashDeck=shuffle(state.flashDeck);state.flashIndex=0;renderFlash();});
 $("#flashCard").addEventListener("click",()=>$("#flashCard").classList.toggle("flipped"));
+$("#flipFlashBtn").addEventListener("click",()=>$("#flashCard").classList.toggle("flipped"));
+$("#prevFlashBtn").addEventListener("click",prevFlash);
+$("#nextFlashBtn").addEventListener("click",nextFlash);
 $$(".rate").forEach(b=>b.addEventListener("click",()=>rateCard(b.dataset.rating)));
 $("#startQuizBtn").addEventListener("click",startQuiz);
 $("#nextQuizBtn").addEventListener("click",()=>{state.quizIndex++;renderQuestion();});
-$("#resetBtn").addEventListener("click",()=>{if(confirm("Hapus semua progress demo di perangkat ini?")){localStorage.removeItem("goiLabProgress");renderHome();renderProgress();buildFlashDeck();}});
+$("#resetBtn").addEventListener("click",()=>{if(confirm("Hapus semua progress demo di perangkat ini?")){localStorage.removeItem("goiLabProgress");renderHome();renderProgress();buildFlashDeck();syncAIEndpointUI();}});
 let deferredPrompt=null;
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;$("#installBtn").classList.remove("hidden");});
 $("#installBtn").addEventListener("click",async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$("#installBtn").classList.add("hidden");});

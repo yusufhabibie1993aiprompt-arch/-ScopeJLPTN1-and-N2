@@ -1,11 +1,11 @@
 {
-  "name": "語彙Lab N1/N2",
-  "short_name": "語彙Lab",
+  "name": "GoiScope N1/N2",
+  "short_name": "GoiScope",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#0d0f13",
-  "theme_color": "#111318",
-  "description": "PWA prototype untuk artikel Jepang, furigana, kosakata N1/N2, flashcard, dan quiz tematik.",
+  "background_color": "#fff8fc",
+  "theme_color": "#f8eef5",
+  "description": "PWA sakura-style untuk artikel Jepang, furigana, terjemahan Indonesia, vocabulary N1/N2, flashcard, quiz, dan konektor AI.",
   "icons": [
     {
       "src": "icon-192.png",

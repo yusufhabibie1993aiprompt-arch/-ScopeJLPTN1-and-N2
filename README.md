@@ -68,3 +68,16 @@ Cara pakai:
 
 Jika situs memblokir pengambilan otomatis / memakai JavaScript / paywall:
 paste teks artikel secara manual dan gunakan **Analisis Teks dengan AI**.
+
+
+# V7 — Interactive Article Vocabulary
+
+- Kata target N1/N2/ADV di paragraf artikel bisa diketuk.
+- Detail kata muncul sebagai bottom sheet/popup.
+- Furigana, arti, nuance, contoh, kata mirip, dan collocation ditampilkan.
+- Tombol `Tambah ke Bank Kata` memakai bank/bookmark lokal yang sudah ada.
+- Tombol `Flashcard Kata Ini` langsung membuat deck satu kata.
+- Kata yang sudah masuk Bank Kata diberi highlight berbeda.
+- Tetap installable sebagai PWA Android.
+
+Update: timpa frontend GitHub Pages dengan isi ZIP ini, commit, tunggu Pages selesai.

@@ -1,11 +1,11 @@
 {
-  "name": "GoiScope N1/N2 — URL Import",
+  "name": "GoiScope N1/N2 — Interactive",
   "short_name": "GoiScope",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#fff8fc",
   "theme_color": "#f8eef5",
-  "description": "PWA Sakura untuk belajar artikel Jepang: paste URL, AI mengambil artikel, membuat furigana, terjemahan Indonesia, vocab N1/N2/ADV, flashcard, dan Library.",
+  "description": "PWA Android untuk artikel Jepang: URL import, AI, furigana, terjemahan, vocabulary interaktif, Bank Kata, flashcard, dan Library.",
   "icons": [
     {
       "src": "icon-192.png",

@@ -1,10 +1,10 @@
 
-const CACHE = "goiscope-v6-url-import";
+const CACHE = "goiscope-v7-interactive";
 const ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=6",
-  "./app.js?v=6",
+  "./styles.css?v=7",
+  "./app.js?v=7",
   "./manifest.webmanifest",
   "./icon-192.png",
   "./icon-512.png"

@@ -70,7 +70,8 @@ const state = {
   weakOnly:false,
   currentArticleTitle:"",
   currentArticleCategory:"",
-  currentArticleData:null
+  currentArticleData:null,
+  activeWordId:null
 };
 
 const $ = s => document.querySelector(s);
@@ -201,7 +202,7 @@ function toggleBookmark(id){
   if(p.bookmarks.includes(id)) p.bookmarks=p.bookmarks.filter(x=>x!==id);
   else p.bookmarks.push(id);
   saveProgress(p);
-  addActivity(`${p.bookmarks.includes(id)?"Bookmark":"Hapus bookmark"} ${DB.find(v=>v.id===id)?.word||id}`);
+  addActivity(`${p.bookmarks.includes(id)?"Tambah Bank Kata":"Hapus Bank Kata"} ${DB.find(v=>v.id===id)?.word||id}`);
   renderVocab();
   renderHome();
 }
@@ -313,6 +314,94 @@ function loadDemo(){
   $("#articleTextInput").value=DEMO.paragraphs.map(p=>p.jp).join("\n\n");
   renderDemoArticle();
 }
+
+function escapeAttr(s=""){
+  return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function renderInteractiveJapanese(text, vocabArr=[]){
+  const items=(vocabArr||[]).filter(v=>v&&v.word).slice().sort((a,b)=>b.word.length-a.word.length);
+  let out="", i=0;
+  while(i<text.length){
+    let hit=null;
+    for(const v of items){
+      if(text.startsWith(v.word,i)){hit=v;break;}
+    }
+    if(hit){
+      out += `<button type="button" class="interactive-word ${isBookmarked(hit.id)?"saved-word":""}" data-word-id="${escapeAttr(hit.id)}">${escapeHtml(hit.word)}</button>`;
+      i += hit.word.length;
+    }else{
+      out += escapeHtml(text[i]);
+      i++;
+    }
+  }
+  return out;
+}
+
+function bindInteractiveWords(){
+  $$(".interactive-word").forEach(btn=>{
+    btn.addEventListener("click",()=>openWordModal(btn.dataset.wordId));
+  });
+}
+
+function refreshInteractiveWordStates(){
+  $$(".interactive-word").forEach(btn=>{
+    btn.classList.toggle("saved-word",isBookmarked(btn.dataset.wordId));
+  });
+}
+
+function openWordModal(id){
+  const v=DB.find(x=>x.id===id);
+  if(!v) return;
+  state.activeWordId=id;
+  $("#wordModalWord").textContent=v.word||"";
+  $("#wordModalReading").textContent=v.reading||"";
+  $("#wordModalMeaning").textContent=v.meaning||"";
+  $("#wordModalLevel").textContent=v.level||"ADV";
+  $("#wordModalTopic").textContent=v.topic||"";
+  $("#wordModalNuance").textContent=v.nuance||"";
+  $("#wordModalExample").textContent=v.example||"";
+  $("#wordModalExampleReading").textContent=v.exampleReading||"";
+  $("#wordModalExampleMeaning").textContent=v.exampleMeaning||"";
+  $("#wordModalSimilar").innerHTML=(v.similar||[]).map(s=>`<span>${escapeHtml(s)}</span>`).join("")||"<span>—</span>";
+  $("#wordModalCollocations").innerHTML=(v.collocations||[]).map(s=>`<span>${escapeHtml(s)}</span>`).join("")||"<span>—</span>";
+  updateWordModalState();
+  $("#wordModal").classList.remove("hidden");
+  document.body.style.overflow="hidden";
+}
+
+function closeWordModal(){
+  $("#wordModal").classList.add("hidden");
+  document.body.style.overflow="";
+  state.activeWordId=null;
+}
+
+function updateWordModalState(){
+  if(!state.activeWordId) return;
+  const saved=isBookmarked(state.activeWordId);
+  $("#wordModalSaved").textContent=saved?"✓ Sudah di Bank Kata":"";
+  $("#addWordBankBtn").textContent=saved?"Hapus dari Bank Kata":"＋ Tambah ke Bank Kata";
+}
+
+function toggleActiveWordBank(){
+  if(!state.activeWordId) return;
+  toggleBookmark(state.activeWordId);
+  updateWordModalState();
+  refreshInteractiveWordStates();
+}
+
+function practiceActiveWord(){
+  if(!state.activeWordId) return;
+  const v=DB.find(x=>x.id===state.activeWordId);
+  if(!v) return;
+  state.flashDeck=[v];
+  state.flashIndex=0;
+  state.weakOnly=true;
+  closeWordModal();
+  setView("flashcards");
+  renderFlash();
+}
+
 function renderDemoArticle(){
   state.currentArticleData={
     title:DEMO.title,
@@ -332,7 +421,7 @@ function renderDemoArticle(){
       return `<button class="vocab-chip go-vocab" data-id="${v.id}">${v.word}<span>${v.reading}</span></button>`;
     }).join("");
     return `<article class="paragraph-card">
-      <div class="jp-line">${p.jp}</div>
+      <div class="jp-line">${renderInteractiveJapanese(p.jp,p.vocab.map(id=>DB.find(x=>x.id===id)).filter(Boolean))}</div>
       <div class="furi-line">${p.reading}</div>
       <div class="id-line">${p.id}</div>
       <div class="vocab-chips">${chips}</div>
@@ -343,6 +432,7 @@ function renderDemoArticle(){
     ${cards}
   </div>`;
   $$(".go-vocab").forEach(b=>b.addEventListener("click",()=>{setView("vocab");$("#vocabSearch").value=DB.find(v=>v.id===b.dataset.id).word;renderVocab();}));
+  bindInteractiveWords();
 }
 
 
@@ -381,7 +471,7 @@ function renderAIArticle(data){
     }).filter(Boolean);
 
     return `<article class="paragraph-card">
-      <div class="jp-line">${escapeHtml(p.japanese || p.jp || "")}</div>
+      <div class="jp-line">${renderInteractiveJapanese(p.japanese || p.jp || "",vocabArr)}</div>
       <div class="furi-line">${escapeHtml(p.furigana || p.reading || "")}</div>
       <div class="id-line">${escapeHtml(p.translation || p.id || "")}</div>
       <div class="vocab-chips">${vocabArr.map(v=>`<button class="vocab-chip go-vocab" data-id="${v.id}">${v.word}<span>${v.reading||""}</span></button>`).join("") || '<span class="article-meta">AI belum mengembalikan vocab untuk paragraf ini.</span>'}</div>
@@ -410,6 +500,7 @@ function renderAIArticle(data){
     ${cards}
   </div>`;
   $$(".go-vocab").forEach(b=>b.addEventListener("click",()=>{setView("vocab");$("#vocabSearch").value=(DB.find(v=>v.id===b.dataset.id)||{}).word || "";renderVocab();}));
+  bindInteractiveWords();
   renderVocab();
   renderHome();
 }
@@ -542,7 +633,7 @@ function analyzeCustom(){
     const found=DB.filter(v=>p.includes(v.word));
     customFoundIds.push(...found.map(v=>v.id));
     return `<article class="paragraph-card">
-      <div class="jp-line">${escapeHtml(p)}</div>
+      <div class="jp-line">${renderInteractiveJapanese(p,found)}</div>
       <div class="furi-line">${buildReadingLine(p,found)}</div>
       <div class="id-line">Terjemahan otomatis penuh belum aktif pada prototype lokal untuk artikel kustom. Versi AI/backend nanti akan mengisi terjemahan Indonesia natural di sini.</div>
       <div class="vocab-chips">${found.map(v=>`<button class="vocab-chip go-vocab" data-id="${v.id}">${v.word}<span>${v.reading}</span></button>`).join("") || '<span class="article-meta">Belum ada kata yang cocok dengan bank demo.</span>'}</div>
@@ -550,6 +641,7 @@ function analyzeCustom(){
   }).join("");
   $("#articleResult").innerHTML=`<div class="article-doc"><div class="article-header"><div><small>ARTICLE ANALYSIS</small><h2>${escapeHtml($("#articleTitleInput").value||"Artikel Kustom")}</h2><div class="article-meta">${$("#articleCategoryInput").value} · ${pars.length} paragraf</div></div></div>${html}</div>`;
   $$(".go-vocab").forEach(b=>b.addEventListener("click",()=>{setView("vocab");$("#vocabSearch").value=DB.find(v=>v.id===b.dataset.id).word;renderVocab();}));
+  bindInteractiveWords();
   state.articleDeckIds=[...new Set(customFoundIds)];
   state.currentArticleData={
     title:state.currentArticleTitle,
@@ -694,7 +786,7 @@ async function openSavedArticle(id){
     }).filter(Boolean);
     allVocab.push(...arr);
     return `<article class="paragraph-card">
-      <div class="jp-line">${escapeHtml(p.japanese||p.jp||"")}</div>
+      <div class="jp-line">${renderInteractiveJapanese(p.japanese||p.jp||"",arr)}</div>
       <div class="furi-line">${escapeHtml(p.furigana||p.reading||"")}</div>
       <div class="id-line">${escapeHtml(p.translation||p.id||"")}</div>
       <div class="vocab-chips">${arr.map(v=>`<button class="vocab-chip go-vocab" data-id="${v.id}">${v.word}<span>${v.reading||""}</span></button>`).join("")}</div>
@@ -707,6 +799,7 @@ async function openSavedArticle(id){
   </div>`;
   const status=$("#articleSaveStatus"); status.textContent="✓ Dibuka dari Library."; status.classList.remove("hidden");
   $$(".go-vocab").forEach(b=>b.addEventListener("click",()=>{setView("vocab");$("#vocabSearch").value=(DB.find(v=>v.id===b.dataset.id)||{}).word||"";renderVocab();}));
+  bindInteractiveWords();
   setView("article");
 }
 async function deleteSavedArticle(id){
@@ -906,7 +999,16 @@ $("#resetBtn").addEventListener("click",()=>{if(confirm("Hapus semua progress de
 let deferredPrompt=null;
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;$("#installBtn").classList.remove("hidden");});
 $("#installBtn").addEventListener("click",async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$("#installBtn").classList.add("hidden");});
-if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=6").catch(()=>{}));}
+
+$("#closeWordModalBtn").addEventListener("click",closeWordModal);
+$("#wordModalBackdrop").addEventListener("click",closeWordModal);
+$("#addWordBankBtn").addEventListener("click",toggleActiveWordBank);
+$("#practiceWordBtn").addEventListener("click",practiceActiveWord);
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape" && !$("#wordModal").classList.contains("hidden")) closeWordModal();
+});
+
+if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=7").catch(()=>{}));}
 
 initSelects();
 loadDemo();

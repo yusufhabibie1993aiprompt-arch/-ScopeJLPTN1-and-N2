@@ -7,8 +7,8 @@
   <meta name="description" content="Prototype PWA untuk membaca artikel Jepang dan menghafal kosakata JLPT N1/N2." />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=6" />
-  <title>GoiScope N1/N2 — URL Import</title>
+  <link rel="stylesheet" href="styles.css?v=7" />
+  <title>GoiScope N1/N2 — Interactive PWA</title>
 </head>
 <body>
   <div class="app-shell">
@@ -155,6 +155,7 @@
         </div>
 
         <div id="articleSaveStatus" class="save-status hidden"></div>
+        <div class="interactive-hint">Tip: kata target N1/N2/ADV di artikel bisa diketuk untuk membuka detail dan disimpan ke Bank Kata.</div>
         <div id="articleResult"></div>
       </section>
 
@@ -169,7 +170,7 @@
             <select id="topicFilter">
               <option value="ALL">Semua bidang</option>
             </select>
-            <button id="bookmarkFilterBtn" class="secondary">★ Bookmark</button>
+            <button id="bookmarkFilterBtn" class="secondary">語 Bank Kata Saya</button>
 <select id="levelFilter">
               <option value="ALL">N1 + N2 + Advanced</option>
               <option value="N1">N1</option>
@@ -319,6 +320,52 @@
       </section>
     </main>
 
+
+    <div id="wordModal" class="word-modal hidden" role="dialog" aria-modal="true">
+      <div id="wordModalBackdrop" class="word-modal-backdrop"></div>
+      <div class="word-sheet">
+        <div class="word-sheet-handle"></div>
+        <button id="closeWordModalBtn" class="word-close" aria-label="Tutup">×</button>
+
+        <div class="word-level-row">
+          <span id="wordModalLevel" class="pill"></span>
+          <span id="wordModalTopic" class="pill"></span>
+          <span id="wordModalSaved" class="saved-indicator"></span>
+        </div>
+
+        <div id="wordModalWord" class="word-sheet-kanji"></div>
+        <div id="wordModalReading" class="word-sheet-reading"></div>
+        <div id="wordModalMeaning" class="word-sheet-meaning"></div>
+
+        <div class="word-sheet-section">
+          <div class="kicker">NUANSA / KONTEKS</div>
+          <div id="wordModalNuance" class="word-sheet-text"></div>
+        </div>
+
+        <div class="word-sheet-section">
+          <div class="kicker">CONTOH</div>
+          <div id="wordModalExample" class="word-sheet-example"></div>
+          <div id="wordModalExampleReading" class="word-sheet-example-reading"></div>
+          <div id="wordModalExampleMeaning" class="word-sheet-text"></div>
+        </div>
+
+        <div class="word-sheet-section">
+          <div class="kicker">KATA MIRIP</div>
+          <div id="wordModalSimilar" class="similar"></div>
+        </div>
+
+        <div class="word-sheet-section">
+          <div class="kicker">COLLOCATION</div>
+          <div id="wordModalCollocations" class="similar"></div>
+        </div>
+
+        <div class="word-sheet-actions">
+          <button id="addWordBankBtn" class="primary">＋ Tambah ke Bank Kata</button>
+          <button id="practiceWordBtn" class="secondary">Flashcard Kata Ini</button>
+        </div>
+      </div>
+    </div>
+
     <nav class="mobile-nav">
       <button class="nav-btn active" data-view="home">⌂<span>Home</span></button>
       <button class="nav-btn" data-view="article">文<span>Artikel</span></button>
@@ -329,6 +376,6 @@
     </nav>
   </div>
 
-  <script src="app.js?v=6"></script>
+  <script src="app.js?v=7"></script>
 </body>
 </html>

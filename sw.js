@@ -1,5 +1,5 @@
 
-const CACHE = "goiscope-v2-1";
+const CACHE = "goiscope-v5";
 const ASSETS = [
   "./",
   "./index.html",

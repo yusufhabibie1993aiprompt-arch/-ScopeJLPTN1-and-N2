@@ -35,3 +35,24 @@ Prototype ini masih frontend lokal. Terjemahan/furigana otomatis untuk artikel k
 - Flashcard sekarang punya tombol **Prev / Flip / Next**.
 - Ditambahkan **AI Connector** di halaman artikel.
 - Dua ikon PWA diletakkan langsung di root repository supaya mudah upload dari HP/laptop.
+
+
+## V2.1 Cache Fix
+Membersihkan cache service worker lama dan menambahkan cache-busting agar tampilan Sakura terbaru langsung terambil setelah deploy.
+
+
+# V5 Unified
+
+Fitur baru:
+- Article Library berbasis IndexedDB.
+- Artikel bisa disimpan dan dibuka berulang kali secara offline.
+- AI result otomatis disimpan ke Library.
+- Search dan filter Library per kategori.
+- Export/Import backup JSON.
+- Source/URL artikel disimpan.
+- AI Connector tetap tersedia untuk backend Vercel.
+- Flashcard Article Deck tetap melekat pada artikel.
+
+Catatan:
+- IndexedDB tersimpan per browser/perangkat. Untuk sinkronisasi HP ↔ laptop diperlukan cloud database (mis. Supabase) pada tahap koneksi cloud.
+- Jangan hapus data situs/browser jika belum membuat backup.

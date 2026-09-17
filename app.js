@@ -69,11 +69,120 @@ const state = {
   bookmarkOnly:false,
   weakOnly:false,
   currentArticleTitle:"",
-  currentArticleCategory:""
+  currentArticleCategory:"",
+  currentArticleData:null
 };
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
+
+
+const ARTICLE_DB_NAME = "GoiScopeLibrary";
+const ARTICLE_DB_VERSION = 1;
+const ARTICLE_STORE = "articles";
+
+function openArticleDB(){
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open(ARTICLE_DB_NAME,ARTICLE_DB_VERSION);
+    req.onupgradeneeded=()=>{
+      const db=req.result;
+      if(!db.objectStoreNames.contains(ARTICLE_STORE)){
+        const store=db.createObjectStore(ARTICLE_STORE,{keyPath:"id"});
+        store.createIndex("savedAt","savedAt");
+        store.createIndex("category","category");
+      }
+    };
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+  });
+}
+async function dbPutArticle(article){
+  const db=await openArticleDB();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(ARTICLE_STORE,"readwrite");
+    tx.objectStore(ARTICLE_STORE).put(article);
+    tx.oncomplete=()=>{db.close();resolve(article);};
+    tx.onerror=()=>{db.close();reject(tx.error);};
+  });
+}
+async function dbGetArticles(){
+  const db=await openArticleDB();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(ARTICLE_STORE,"readonly");
+    const req=tx.objectStore(ARTICLE_STORE).getAll();
+    req.onsuccess=()=>{
+      const rows=(req.result||[]).sort((a,b)=>(b.savedAt||0)-(a.savedAt||0));
+      db.close();resolve(rows);
+    };
+    req.onerror=()=>{db.close();reject(req.error);};
+  });
+}
+async function dbGetArticle(id){
+  const db=await openArticleDB();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(ARTICLE_STORE,"readonly");
+    const req=tx.objectStore(ARTICLE_STORE).get(id);
+    req.onsuccess=()=>{db.close();resolve(req.result||null);};
+    req.onerror=()=>{db.close();reject(req.error);};
+  });
+}
+async function dbDeleteArticle(id){
+  const db=await openArticleDB();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(ARTICLE_STORE,"readwrite");
+    tx.objectStore(ARTICLE_STORE).delete(id);
+    tx.oncomplete=()=>{db.close();resolve();};
+    tx.onerror=()=>{db.close();reject(tx.error);};
+  });
+}
+async function dbClearArticles(){
+  const db=await openArticleDB();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(ARTICLE_STORE,"readwrite");
+    tx.objectStore(ARTICLE_STORE).clear();
+    tx.oncomplete=()=>{db.close();resolve();};
+    tx.onerror=()=>{db.close();reject(tx.error);};
+  });
+}
+function makeArticleId(title,text){
+  let hash=2166136261;
+  const str=(title+"|"+text).slice(0,250000);
+  for(let i=0;i<str.length;i++){hash^=str.charCodeAt(i);hash=Math.imul(hash,16777619);}
+  return "article_"+(hash>>>0).toString(16);
+}
+function articleWordCount(article){
+  const ids=new Set();
+  (article.paragraphs||[]).forEach(p=>(p.vocabulary||p.vocab||[]).forEach(v=>{
+    if(typeof v==="string") ids.add(v);
+    else if(v&&v.word) ids.add(v.word);
+  }));
+  return ids.size;
+}
+async function saveCurrentArticle(showAlert=true){
+  const a=state.currentArticleData;
+  if(!a || !(a.paragraphs||[]).length){
+    if(showAlert) alert("Belum ada hasil artikel yang bisa disimpan.");
+    return;
+  }
+  const text=(a.paragraphs||[]).map(p=>p.japanese||p.jp||"").join("\n\n");
+  const record={
+    ...a,
+    id:a.id || makeArticleId(a.title||"",text),
+    source:$("#articleSourceInput")?.value.trim() || a.source || "",
+    savedAt:Date.now(),
+    version:5
+  };
+  await dbPutArticle(record);
+  state.currentArticleData=record;
+  const status=$("#articleSaveStatus");
+  if(status){
+    status.textContent="✓ Artikel tersimpan di Library perangkat ini.";
+    status.classList.remove("hidden");
+  }
+  addActivity(`Menyimpan artikel: ${record.title||"Tanpa judul"}`);
+  if(showAlert) alert("Artikel sudah disimpan ke Library.");
+  renderLibrary();
+}
 
 function loadProgress(){
   return JSON.parse(localStorage.getItem("goiLabProgress") || '{"ratings":{},"quizCorrect":0,"quizTotal":0,"activity":[],"bookmarks":[]}');
@@ -135,11 +244,12 @@ function setView(id){
   state.view=id;
   $$(".view").forEach(v=>v.classList.toggle("active",v.id===id));
   $$(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.view===id));
-  const titles={home:"Dashboard",article:"Artikel",vocab:"Vocabulary",flashcards:"Flashcard",quiz:"Quiz",progress:"Progress"};
+  const titles={home:"Dashboard",article:"Artikel",vocab:"Vocabulary",library:"Library",flashcards:"Flashcard",quiz:"Quiz",progress:"Progress"};
   $("#viewTitle").textContent=titles[id]||"語彙Lab";
   window.scrollTo({top:0,behavior:"smooth"});
   if(id==="home") renderHome();
   if(id==="vocab") renderVocab();
+  if(id==="library") renderLibrary();
   if(id==="flashcards" && !state.weakOnly) buildFlashDeck();
 syncAIEndpointUI();
   if(id==="progress") renderProgress();
@@ -156,10 +266,15 @@ function initSelects(){
   $("#topicFilter").innerHTML=options;
   $("#flashTopic").innerHTML=options;
   $("#quizTopic").innerHTML=options;
+  if($("#libraryTopicFilter")) $("#libraryTopicFilter").innerHTML=options;
 }
 
 function renderHome(){
   const p=loadProgress();
+  dbGetArticles().then(rows=>{
+    const el=$("#homeStats .article-count-stat b");
+    if(el) el.textContent=rows.length+" artikel";
+  }).catch(()=>{});
   const studied=Object.keys(p.ratings).length;
   const mastered=DB.filter(v=>mastery(v)>=2).length;
   const accuracy=p.quizTotal?Math.round(p.quizCorrect/p.quizTotal*100):0;
@@ -169,8 +284,9 @@ function renderHome(){
     ["Pernah direview",studied+" kata","Flashcard"],
     ["Good / Easy",mastered+" kata","Mastery"],
     ["Quiz accuracy",accuracy+"%","Dari semua quiz"],
-    ["Bookmark",bookmarked+" kata","Kata sulit pilihanmu"]
-  ].map(x=>`<div class="stat"><span>${x[0]}</span><b>${x[1]}</b><span>${x[2]}</span></div>`).join("");
+    ["Bookmark",bookmarked+" kata","Kata sulit pilihanmu"],
+    ["Library","0 artikel","Tersimpan offline","article-count-stat"]
+  ].map(x=>`<div class="stat ${x[3]||""}"><span>${x[0]}</span><b>${x[1]}</b><span>${x[2]}</span></div>`).join("");
   const review=DB.slice().sort((a,b)=>mastery(a)-mastery(b)).slice(0,5);
   $("#reviewList").innerHTML=review.map(v=>`<div class="compact-item"><div class="compact-jp"><b>${v.word}</b><span>${v.reading}</span></div><div class="compact-right">${v.meaning}<br>${v.topic} · ${v.level}</div></div>`).join("");
   $("#categoryBars").innerHTML=topics().map(t=>{
@@ -185,10 +301,20 @@ function loadDemo(){
   state.currentArticleCategory=DEMO.category;
   $("#articleTitleInput").value=DEMO.title;
   $("#articleCategoryInput").value=DEMO.category;
+  if($("#articleSourceInput")) $("#articleSourceInput").value="Demo GoiScope";
   $("#articleTextInput").value=DEMO.paragraphs.map(p=>p.jp).join("\n\n");
   renderDemoArticle();
 }
 function renderDemoArticle(){
+  state.currentArticleData={
+    title:DEMO.title,
+    category:DEMO.category,
+    source:$("#articleSourceInput")?.value.trim() || "Demo GoiScope",
+    paragraphs:DEMO.paragraphs.map(p=>({
+      japanese:p.jp, furigana:p.reading, translation:p.id,
+      vocabulary:p.vocab.map(id=>DB.find(v=>v.id===id)).filter(Boolean)
+    }))
+  };
   state.currentArticleTitle=DEMO.title;
   state.currentArticleCategory=DEMO.category;
   state.articleDeckIds=[...new Set(DEMO.paragraphs.flatMap(p=>p.vocab))];
@@ -259,6 +385,17 @@ function renderAIArticle(data){
     if(!DB.find(x=>x.id===v.id)) DB.push(v);
   });
   state.articleDeckIds = [...new Set(articleVocabObjects.map(v=>v.id))];
+  state.currentArticleData={
+    title:article.title,
+    category:article.category,
+    source:$("#articleSourceInput")?.value.trim() || article.source || "",
+    paragraphs:article.paragraphs.map(p=>({
+      japanese:p.japanese||p.jp||"",
+      furigana:p.furigana||p.reading||"",
+      translation:p.translation||p.id||"",
+      vocabulary:(p.vocabulary||p.vocab||[])
+    }))
+  };
 
   $("#articleResult").innerHTML=`<div class="article-doc">
     <div class="article-header"><div><small>AI ARTICLE ANALYSIS</small><h2>${escapeHtml(article.title || "Hasil Analisis AI")}</h2><div class="article-meta">${escapeHtml(article.category || "")} · ${article.paragraphs.length} paragraf · ${state.articleDeckIds.length} target vocab</div></div></div>
@@ -272,6 +409,7 @@ function normalizeAIResponse(data){
   return {
     title: data.title || $("#articleTitleInput").value || "Artikel AI",
     category: data.category || $("#articleCategoryInput").value || "経済",
+    source: data.source || $("#articleSourceInput")?.value.trim() || "",
     paragraphs: (data.paragraphs || []).map(p => ({
       japanese: p.japanese || p.jp || "",
       furigana: p.furigana || p.reading || "",
@@ -304,6 +442,7 @@ async function analyzeWithAI(){
     const data = await res.json();
     renderAIArticle(data);
     addActivity("Menganalisis artikel dengan AI");
+    await saveCurrentArticle(false);
   }catch(err){
     console.error(err);
     alert("Gagal menghubungi endpoint AI. Pastikan URL endpoint benar dan backend mengembalikan JSON yang sesuai.");
@@ -335,6 +474,20 @@ function analyzeCustom(){
   $("#articleResult").innerHTML=`<div class="article-doc"><div class="article-header"><div><small>ARTICLE ANALYSIS</small><h2>${escapeHtml($("#articleTitleInput").value||"Artikel Kustom")}</h2><div class="article-meta">${$("#articleCategoryInput").value} · ${pars.length} paragraf</div></div></div>${html}</div>`;
   $$(".go-vocab").forEach(b=>b.addEventListener("click",()=>{setView("vocab");$("#vocabSearch").value=DB.find(v=>v.id===b.dataset.id).word;renderVocab();}));
   state.articleDeckIds=[...new Set(customFoundIds)];
+  state.currentArticleData={
+    title:state.currentArticleTitle,
+    category:state.currentArticleCategory,
+    source:$("#articleSourceInput")?.value.trim() || "",
+    paragraphs:pars.map(p=>{
+      const found=DB.filter(v=>p.includes(v.word));
+      return {
+        japanese:p,
+        furigana:buildReadingLine(p,found),
+        translation:"Terjemahan AI belum dijalankan untuk paragraf ini.",
+        vocabulary:found
+      };
+    })
+  };
   addActivity("Menganalisis artikel kustom");
 }
 
@@ -388,6 +541,143 @@ function openWeakDeck(){
   setView("flashcards");
   renderFlash();
   addActivity(`Membuka review kata lemah (${state.flashDeck.length} kata)`);
+}
+
+
+async function renderLibrary(){
+  const grid=$("#libraryGrid");
+  if(!grid) return;
+  const rows=await dbGetArticles().catch(()=>[]);
+  const q=($("#librarySearch")?.value||"").trim().toLowerCase();
+  const topic=$("#libraryTopicFilter")?.value||"ALL";
+  const filtered=rows.filter(a=>{
+    const hay=[a.title,a.source,a.category].join(" ").toLowerCase();
+    return (topic==="ALL"||a.category===topic) && (!q||hay.includes(q));
+  });
+  const totalWords=rows.reduce((s,a)=>s+articleWordCount(a),0);
+  $("#librarySummary").innerHTML=`
+    <span class="summary-pill">${rows.length} artikel tersimpan</span>
+    <span class="summary-pill">${totalWords} target vocab</span>
+    <span class="summary-pill">Offline via IndexedDB</span>
+  `;
+  grid.innerHTML=filtered.map(a=>{
+    const date=a.savedAt?new Date(a.savedAt).toLocaleDateString("id-ID"):"";
+    const pc=(a.paragraphs||[]).length;
+    const vc=articleWordCount(a);
+    return `<article class="library-card">
+      <div>
+        <h4>${escapeHtml(a.title||"Tanpa judul")}</h4>
+        <div class="source">${escapeHtml(a.source||"Sumber tidak dicatat")}</div>
+      </div>
+      <div class="library-meta">
+        <span>${escapeHtml(a.category||"Lainnya")}</span>
+        <span>${pc} paragraf</span>
+        <span>${vc} vocab</span>
+        <span>${date}</span>
+      </div>
+      <div class="library-actions-row">
+        <button class="secondary open-saved-article" data-id="${a.id}">Buka</button>
+        <button class="ghost danger delete-saved-article" data-id="${a.id}">Hapus</button>
+      </div>
+    </article>`;
+  }).join("") || `<div class="panel">Belum ada artikel yang cocok. Simpan artikel dari halaman Artikel.</div>`;
+  $$(".open-saved-article").forEach(b=>b.addEventListener("click",()=>openSavedArticle(b.dataset.id)));
+  $$(".delete-saved-article").forEach(b=>b.addEventListener("click",()=>deleteSavedArticle(b.dataset.id)));
+}
+async function openSavedArticle(id){
+  const a=await dbGetArticle(id);
+  if(!a) return;
+  state.currentArticleData=a;
+  state.currentArticleTitle=a.title||"Artikel";
+  state.currentArticleCategory=a.category||"";
+  $("#articleTitleInput").value=a.title||"";
+  $("#articleCategoryInput").value=a.category||"経済";
+  $("#articleSourceInput").value=a.source||"";
+  $("#articleTextInput").value=(a.paragraphs||[]).map(p=>p.japanese||p.jp||"").join("\n\n");
+  const allVocab=[];
+  const cards=(a.paragraphs||[]).map(p=>{
+    const arr=(p.vocabulary||p.vocab||[]).map(v=>{
+      if(typeof v==="string") return DB.find(x=>x.id===v||x.word===v);
+      if(v&&v.word){
+        let existing=DB.find(x=>x.word===v.word);
+        if(!existing){
+          existing={
+            id:v.id||("saved_"+v.word.replace(/[^\w一-龯ぁ-んァ-ン]/g,"")),
+            word:v.word,reading:v.reading||"",meaning:v.meaning||"",
+            level:v.level||"ADV",topic:v.topic||a.category||"経済",
+            nuance:v.nuance||"",similar:v.similar||[],collocations:v.collocations||[],
+            example:v.example||p.japanese||"",exampleReading:v.exampleReading||p.furigana||"",
+            exampleMeaning:v.exampleMeaning||p.translation||""
+          };
+          DB.push(existing);
+        }
+        return existing;
+      }
+      return null;
+    }).filter(Boolean);
+    allVocab.push(...arr);
+    return `<article class="paragraph-card">
+      <div class="jp-line">${escapeHtml(p.japanese||p.jp||"")}</div>
+      <div class="furi-line">${escapeHtml(p.furigana||p.reading||"")}</div>
+      <div class="id-line">${escapeHtml(p.translation||p.id||"")}</div>
+      <div class="vocab-chips">${arr.map(v=>`<button class="vocab-chip go-vocab" data-id="${v.id}">${v.word}<span>${v.reading||""}</span></button>`).join("")}</div>
+    </article>`;
+  }).join("");
+  state.articleDeckIds=[...new Set(allVocab.map(v=>v.id))];
+  $("#articleResult").innerHTML=`<div class="article-doc">
+    <div class="article-header"><div><small>SAVED ARTICLE</small><h2>${escapeHtml(a.title||"Artikel")}</h2><div class="article-meta">${escapeHtml(a.category||"")} · ${a.paragraphs?.length||0} paragraf · ${state.articleDeckIds.length} target vocab</div></div></div>
+    ${cards}
+  </div>`;
+  const status=$("#articleSaveStatus"); status.textContent="✓ Dibuka dari Library."; status.classList.remove("hidden");
+  $$(".go-vocab").forEach(b=>b.addEventListener("click",()=>{setView("vocab");$("#vocabSearch").value=(DB.find(v=>v.id===b.dataset.id)||{}).word||"";renderVocab();}));
+  setView("article");
+}
+async function deleteSavedArticle(id){
+  if(!confirm("Hapus artikel ini dari Library?")) return;
+  await dbDeleteArticle(id);
+  addActivity("Menghapus artikel dari Library");
+  renderLibrary();
+}
+async function clearLibrary(){
+  if(!confirm("Hapus SEMUA artikel yang tersimpan di perangkat ini?")) return;
+  await dbClearArticles();
+  addActivity("Menghapus seluruh Article Library");
+  renderLibrary();
+}
+async function exportBackup(){
+  const articles=await dbGetArticles();
+  const payload={
+    app:"GoiScope",
+    version:5,
+    exportedAt:new Date().toISOString(),
+    articles,
+    progress:loadProgress(),
+    aiEndpoint:getAIEndpoint()
+  };
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download=`goiscope-backup-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);a.click();a.remove();
+  URL.revokeObjectURL(url);
+}
+async function importBackup(file){
+  if(!file) return;
+  try{
+    const data=JSON.parse(await file.text());
+    const articles=data.articles||[];
+    for(const a of articles) await dbPutArticle(a);
+    if(data.progress) saveProgress(data.progress);
+    if(data.aiEndpoint) setAIEndpoint(data.aiEndpoint);
+    syncAIEndpointUI();
+    addActivity(`Import backup: ${articles.length} artikel`);
+    alert(`Backup berhasil diimport: ${articles.length} artikel.`);
+    renderLibrary();renderHome();renderProgress();
+  }catch(e){
+    console.error(e);
+    alert("File backup tidak valid.");
+  }
 }
 
 function buildFlashDeck(){
@@ -509,6 +799,7 @@ function renderProgress(){
 
 $$(".nav-btn,.go-view").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));
 $("#loadDemoBtn").addEventListener("click",loadDemo);
+$("#saveArticleBtn").addEventListener("click",()=>saveCurrentArticle(true));
 $("#saveAiConfigBtn").addEventListener("click",saveAIConfig);
 $("#analyzeAiBtn").addEventListener("click",analyzeWithAI);
 $("#articleDeckBtn").addEventListener("click",openArticleDeck);
@@ -517,6 +808,11 @@ $("#analyzeBtn").addEventListener("click",analyzeCustom);
 $("#vocabSearch").addEventListener("input",renderVocab);
 $("#topicFilter").addEventListener("change",renderVocab);
 $("#levelFilter").addEventListener("change",renderVocab);
+if($("#librarySearch")) $("#librarySearch").addEventListener("input",renderLibrary);
+if($("#libraryTopicFilter")) $("#libraryTopicFilter").addEventListener("change",renderLibrary);
+if($("#exportBackupBtn")) $("#exportBackupBtn").addEventListener("click",exportBackup);
+if($("#importBackupInput")) $("#importBackupInput").addEventListener("change",e=>importBackup(e.target.files?.[0]));
+if($("#clearLibraryBtn")) $("#clearLibraryBtn").addEventListener("click",clearLibrary);
 $("#bookmarkFilterBtn").addEventListener("click",()=>{state.bookmarkOnly=!state.bookmarkOnly;$("#bookmarkFilterBtn").classList.toggle("active",state.bookmarkOnly);renderVocab();});
 $("#flashTopic").addEventListener("change",buildFlashDeck);
 $("#flashMode").addEventListener("change",renderFlash);
@@ -532,10 +828,11 @@ $("#resetBtn").addEventListener("click",()=>{if(confirm("Hapus semua progress de
 let deferredPrompt=null;
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;$("#installBtn").classList.remove("hidden");});
 $("#installBtn").addEventListener("click",async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$("#installBtn").classList.add("hidden");});
-if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=2.1").catch(()=>{}));}
+if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=5").catch(()=>{}));}
 
 initSelects();
 loadDemo();
 renderHome();
 renderVocab();
+renderLibrary();
 buildFlashDeck();

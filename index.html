@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#111318" />
+  <meta name="description" content="Prototype PWA untuk membaca artikel Jepang dan menghafal kosakata JLPT N1/N2." />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icon-192.png" />
+  <link rel="stylesheet" href="styles.css" />
+  <title>語彙Lab N1/N2</title>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">語</div>
+        <div>
+          <strong>語彙Lab</strong>
+          <span>N1 / N2 Article Trainer</span>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-btn active" data-view="home"><span>⌂</span> Home</button>
+        <button class="nav-btn" data-view="article"><span>文</span> Artikel</button>
+        <button class="nav-btn" data-view="vocab"><span>語</span> Vocabulary</button>
+        <button class="nav-btn" data-view="flashcards"><span>↺</span> Flashcard</button>
+        <button class="nav-btn" data-view="quiz"><span>✓</span> Quiz</button>
+        <button class="nav-btn" data-view="progress"><span>▥</span> Progress</button>
+      </nav>
+
+      <div class="side-note">
+        <strong>Prinsip aplikasi</strong>
+        <span>Kanji → furigana di baris bawah → arti Indonesia → konteks.</span>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <small>JLPT ADVANCED VOCABULARY</small>
+          <h1 id="viewTitle">Dashboard</h1>
+        </div>
+        <div class="top-actions">
+          <button id="installBtn" class="ghost hidden">Install App</button>
+          <button id="resetBtn" class="ghost danger">Reset Demo</button>
+        </div>
+      </header>
+
+      <section id="home" class="view active">
+        <div class="hero">
+          <div>
+            <span class="eyebrow">N1/N2 Vocabulary Intelligence</span>
+            <h2>Ubah satu artikel Jepang menjadi bahan hafalan.</h2>
+            <p>Mulai dari konteks, bukan daftar kata. Baca paragraf → pahami terjemahan → temukan goi sulit → hafalkan lewat flashcard & quiz.</p>
+            <div class="hero-actions">
+              <button class="primary go-view" data-view="article">Buka Artikel Demo</button>
+              <button class="secondary go-view" data-view="flashcards">Mulai Flashcard</button>
+<button class="secondary" id="weakReviewBtn">Review Kata Lemah</button>
+            </div>
+          </div>
+          <div class="hero-card">
+            <div class="big-kanji">顕著</div>
+            <div class="reading">けんちょ</div>
+            <div class="meaning">mencolok / nyata / signifikan</div>
+            <div class="tag-row"><span>N1</span><span>社会</span><span>新聞語彙</span></div>
+          </div>
+        </div>
+
+        <div class="stats-grid" id="homeStats"></div>
+
+        <div class="two-col">
+          <div class="panel">
+            <div class="panel-head">
+              <div><small>今日の復習</small><h3>Review hari ini</h3></div>
+              <button class="text-btn go-view" data-view="flashcards">Buka →</button>
+            </div>
+            <div id="reviewList" class="compact-list"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <div><small>分野別</small><h3>Progress per bidang</h3></div>
+            </div>
+            <div id="categoryBars"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="article" class="view">
+        <div class="panel article-import">
+          <div class="panel-head wrap">
+            <div>
+              <small>ARTICLE IMPORT</small>
+              <h3>Masukkan artikel Jepang</h3>
+            </div>
+            <div class="pill">Prototype lokal</div>
+          </div>
+          <div class="form-grid">
+            <label>Judul
+              <input id="articleTitleInput" value="物価上昇と消費行動の変化" />
+            </label>
+            <label>Bidang
+              <select id="articleCategoryInput">
+                <option value="経済">Ekonomi</option>
+                <option value="社会">Sosial</option>
+                <option value="教育">Pendidikan</option>
+                <option value="技術">Teknologi</option>
+                <option value="環境">Lingkungan</option>
+                <option value="スポーツ">Olahraga</option>
+                <option value="エンタメ">Hiburan</option>
+              </select>
+            </label>
+          </div>
+          <label>Artikel Jepang
+            <textarea id="articleTextInput" rows="8"></textarea>
+          </label>
+          <div class="helper">
+            <strong>Catatan prototype:</strong> artikel demo punya terjemahan + furigana lengkap. Artikel kustom tetap bisa dipecah per paragraf dan dideteksi kosakata yang ada di bank demo; terjemahan otomatis penuh memerlukan koneksi AI/backend pada versi berikutnya.
+          </div>
+          <div class="button-row">
+            <button id="loadDemoBtn" class="secondary">Muat Artikel Demo</button>
+            <button id="analyzeBtn" class="primary">Analisis Artikel</button>
+<button id="articleDeckBtn" class="secondary">Flashcard Artikel Ini</button>
+          </div>
+        </div>
+
+        <div id="articleResult"></div>
+      </section>
+
+      <section id="vocab" class="view">
+        <div class="toolbar">
+          <div>
+            <small>VOCABULARY BANK</small>
+            <h3>Bank Kosakata</h3>
+          </div>
+          <div class="filters">
+            <input id="vocabSearch" placeholder="Cari kanji, furigana, arti..." />
+            <select id="topicFilter">
+              <option value="ALL">Semua bidang</option>
+            </select>
+            <button id="bookmarkFilterBtn" class="secondary">★ Bookmark</button>
+<select id="levelFilter">
+              <option value="ALL">N1 + N2 + Advanced</option>
+              <option value="N1">N1</option>
+              <option value="N2">N2</option>
+              <option value="ADV">Advanced</option>
+            </select>
+          </div>
+        </div>
+        <div id="vocabGrid" class="vocab-grid"></div>
+      </section>
+
+      <section id="flashcards" class="view">
+        <div class="study-layout">
+          <div class="panel study-settings">
+            <small>FLASHCARD MODE</small>
+            <h3>Hafalan bolak-balik</h3>
+            <label>Bidang
+              <select id="flashTopic"></select>
+            </label>
+            <label>Arah kartu
+              <select id="flashMode">
+                <option value="kanji-meaning">Kanji → Arti + Furigana</option>
+                <option value="meaning-kanji">Arti Indonesia → Kanji + Furigana</option>
+                <option value="kanji-reading">Kanji → Furigana</option>
+                <option value="reading-kanji">Furigana → Kanji + Arti</option>
+              </select>
+            </label>
+            <button id="shuffleFlashBtn" class="secondary full">Acak kartu</button>
+            <div class="mini-help">
+              Gunakan <b>Again / Hard / Good / Easy</b>. Nilai tersimpan di perangkat dan memengaruhi daftar review.
+            </div>
+          </div>
+
+          <div class="flash-area">
+            <div class="flash-meta">
+              <span id="flashCounter">1 / 1</span>
+              <span id="flashTopicBadge"></span>
+            </div>
+            <button id="flashCard" class="flashcard" aria-label="Balik kartu">
+              <div class="flash-inner">
+                <div class="flash-face flash-front">
+                  <small id="flashPromptLabel"></small>
+                  <div id="flashPrompt" class="flash-main"></div>
+                  <div id="flashPromptSub" class="flash-sub"></div>
+                  <span class="tap-hint">Tap untuk lihat jawaban</span>
+                </div>
+                <div class="flash-face flash-back">
+                  <small>JAWABAN</small>
+                  <div id="flashAnswer" class="flash-main"></div>
+                  <div id="flashReading" class="flash-reading"></div>
+                  <div id="flashMeaning" class="flash-meaning"></div>
+                  <div id="flashExample" class="flash-example"></div>
+                </div>
+              </div>
+            </button>
+
+            <div class="rating-row">
+              <button data-rating="again" class="rate again">Again</button>
+              <button data-rating="hard" class="rate hard">Hard</button>
+              <button data-rating="good" class="rate good">Good</button>
+              <button data-rating="easy" class="rate easy">Easy</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="quiz" class="view">
+        <div class="panel quiz-setup" id="quizSetup">
+          <small>THEMATIC QUIZ</small>
+          <h3>Kuis berdasarkan bidang</h3>
+          <p>Pilih tema. Soal akan mengambil kosakata dari bidang tersebut dan mencampur arti, kanji, dan konteks.</p>
+          <div class="form-grid">
+            <label>Bidang
+              <select id="quizTopic"></select>
+            </label>
+            <label>Jumlah soal
+              <select id="quizCount">
+                <option value="5">5 soal</option>
+                <option value="10" selected>10 soal</option>
+                <option value="15">15 soal</option>
+              </select>
+            </label>
+          </div>
+          <button id="startQuizBtn" class="primary">Mulai Quiz</button>
+        </div>
+
+        <div id="quizBox" class="panel hidden">
+          <div class="quiz-top">
+            <span id="quizProgress"></span>
+            <span id="quizScore"></span>
+          </div>
+          <div id="quizQuestion"></div>
+          <div id="quizOptions" class="quiz-options"></div>
+          <div id="quizFeedback" class="quiz-feedback"></div>
+          <button id="nextQuizBtn" class="primary hidden">Soal berikutnya</button>
+        </div>
+      </section>
+
+      <section id="progress" class="view">
+        <div class="stats-grid" id="progressStats"></div>
+        <div class="two-col">
+          <div class="panel">
+            <div class="panel-head"><div><small>MASTERY</small><h3>Kekuatan vocabulary</h3></div></div>
+            <div id="masteryBars"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><small>RECENT</small><h3>Aktivitas terakhir</h3></div></div>
+            <div id="activityList" class="compact-list"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <nav class="mobile-nav">
+      <button class="nav-btn active" data-view="home">⌂<span>Home</span></button>
+      <button class="nav-btn" data-view="article">文<span>Artikel</span></button>
+      <button class="nav-btn" data-view="vocab">語<span>Vocab</span></button>
+      <button class="nav-btn" data-view="flashcards">↺<span>Kartu</span></button>
+      <button class="nav-btn" data-view="quiz">✓<span>Quiz</span></button>
+    </nav>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

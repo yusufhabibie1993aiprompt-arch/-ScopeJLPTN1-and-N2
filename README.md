@@ -56,3 +56,15 @@ Fitur baru:
 Catatan:
 - IndexedDB tersimpan per browser/perangkat. Untuk sinkronisasi HP ↔ laptop diperlukan cloud database (mis. Supabase) pada tahap koneksi cloud.
 - Jangan hapus data situs/browser jika belum membuat backup.
+
+
+# V6 — One-click URL Import
+
+Cara pakai:
+1. Paste URL artikel di kolom **Sumber / URL artikel**.
+2. Klik **⚡ Ambil & Analisis URL**.
+3. Backend Vercel mengambil isi artikel, mengirimkannya ke AI, lalu hasil langsung tampil.
+4. Hasil otomatis disimpan ke Library.
+
+Jika situs memblokir pengambilan otomatis / memakai JavaScript / paywall:
+paste teks artikel secara manual dan gunakan **Analisis Teks dengan AI**.

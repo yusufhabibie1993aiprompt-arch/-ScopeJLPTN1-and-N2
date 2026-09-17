@@ -7,8 +7,8 @@
   <meta name="description" content="Prototype PWA untuk membaca artikel Jepang dan menghafal kosakata JLPT N1/N2." />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=5" />
-  <title>GoiScope N1/N2</title>
+  <link rel="stylesheet" href="styles.css?v=6" />
+  <title>GoiScope N1/N2 — URL Import</title>
 </head>
 <body>
   <div class="app-shell">
@@ -102,8 +102,8 @@
             <label>Judul
               <input id="articleTitleInput" value="物価上昇と消費行動の変化" />
             </label>
-            <label>Sumber / URL
-              <input id="articleSourceInput" placeholder="Contoh: NHK / Nikkei / URL artikel" />
+            <label>Sumber / URL artikel
+              <input id="articleSourceInput" placeholder="Paste URL Today Easy Japanese, NHK, Nikkei, dll." />
             </label>
             <label>Bidang
               <select id="articleCategoryInput">
@@ -141,13 +141,14 @@
               </label>
             </div>
             <div class="helper">
-              Endpoint menerima <b>POST JSON</b> berisi <code>{ title, category, text }</code> dan mengembalikan JSON analisis artikel. Kalau endpoint belum diisi, tombol AI belum bisa memproses artikel kustom.
+              <b>Mode tercepat:</b> paste URL di kolom Sumber/URL lalu tekan <b>⚡ Ambil & Analisis URL</b>. Kalau situs tidak bisa diambil otomatis, kamu masih bisa paste teks artikelnya dan gunakan Analisis Teks dengan AI.<br><br>              Endpoint menerima <b>POST JSON</b> berisi <code>{ title, category, text }</code> dan mengembalikan JSON analisis artikel. Kalau endpoint belum diisi, tombol AI belum bisa memproses artikel kustom.
             </div>
           </div>
           <div class="button-row">
             <button id="loadDemoBtn" class="secondary">Muat Artikel Demo</button>
             <button id="analyzeBtn" class="primary">Analisis Artikel</button>
-            <button id="analyzeAiBtn" class="primary accent2">Analisis dengan AI</button>
+            <button id="importUrlAiBtn" class="primary url-import-btn">⚡ Ambil & Analisis URL</button>
+            <button id="analyzeAiBtn" class="primary accent2">Analisis Teks dengan AI</button>
 <button id="articleDeckBtn" class="secondary">Flashcard Artikel Ini</button>
             <button id="saveArticleBtn" class="secondary">♡ Simpan ke Library</button>
           </div>
@@ -328,6 +329,6 @@
     </nav>
   </div>
 
-  <script src="app.js?v=5"></script>
+  <script src="app.js?v=6"></script>
 </body>
 </html>

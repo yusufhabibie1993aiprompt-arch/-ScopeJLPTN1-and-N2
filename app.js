@@ -206,6 +206,14 @@ function toggleBookmark(id){
   renderHome();
 }
 
+
+function getImportUrlEndpoint(){
+  const analyze = getAIEndpoint();
+  if(!analyze) return "";
+  if(analyze.includes("/api/analyze")) return analyze.replace("/api/analyze","/api/import-url");
+  return analyze.replace(/\/+$/,"") + "/api/import-url";
+}
+
 function getAIEndpoint(){
   return localStorage.getItem("goiLabAIEndpoint") || "";
 }
@@ -418,6 +426,75 @@ function normalizeAIResponse(data){
     }))
   };
 }
+
+async function importAndAnalyzeUrl(){
+  const url=$("#articleSourceInput").value.trim();
+  const category=$("#articleCategoryInput").value;
+  const endpoint=getImportUrlEndpoint();
+
+  if(!url){
+    alert("Paste URL artikel dulu di kolom Sumber / URL artikel.");
+    return;
+  }
+  if(!/^https?:\/\//i.test(url)){
+    alert("URL harus diawali http:// atau https://");
+    return;
+  }
+  if(!endpoint){
+    alert("Endpoint AI belum tersimpan.");
+    return;
+  }
+
+  const btn=$("#importUrlAiBtn");
+  const oldLabel=btn.textContent;
+  btn.disabled=true;
+  btn.textContent="Mengambil artikel + menganalisis...";
+
+  try{
+    const res=await fetch(endpoint,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({url,category})
+    });
+
+    let data={};
+    try{ data=await res.json(); }catch{}
+
+    if(!res.ok){
+      throw new Error(data.error || `HTTP ${res.status}`);
+    }
+
+    renderAIArticle(data);
+
+    if(data.title) $("#articleTitleInput").value=data.title;
+    if(data.category) $("#articleCategoryInput").value=data.category;
+    $("#articleSourceInput").value=data.source || url;
+
+    const reconstructed=(data.paragraphs||[]).map(p=>p.japanese||p.jp||"").join("\n\n");
+    if(reconstructed) $("#articleTextInput").value=reconstructed;
+
+    addActivity("Mengambil URL artikel dan menganalisis dengan AI");
+    await saveCurrentArticle(false);
+
+    const status=$("#articleSaveStatus");
+    if(status){
+      status.textContent="✓ URL berhasil diambil, dianalisis AI, dan disimpan ke Library.";
+      status.classList.remove("hidden");
+    }
+
+  }catch(err){
+    console.error(err);
+    alert(
+      "Gagal mengambil / menganalisis URL.\n\n" +
+      (err.message || "Unknown error") +
+      "\n\nKalau situs memakai paywall/JavaScript atau memblokir server, paste teks artikelnya lalu gunakan Analisis Teks dengan AI."
+    );
+  }finally{
+    btn.disabled=false;
+    btn.textContent=oldLabel;
+  }
+}
+
 async function analyzeWithAI(){
   const endpoint = getAIEndpoint();
   const title = $("#articleTitleInput").value.trim();
@@ -801,6 +878,7 @@ $$(".nav-btn,.go-view").forEach(b=>b.addEventListener("click",()=>setView(b.data
 $("#loadDemoBtn").addEventListener("click",loadDemo);
 $("#saveArticleBtn").addEventListener("click",()=>saveCurrentArticle(true));
 $("#saveAiConfigBtn").addEventListener("click",saveAIConfig);
+$("#importUrlAiBtn").addEventListener("click",importAndAnalyzeUrl);
 $("#analyzeAiBtn").addEventListener("click",analyzeWithAI);
 $("#articleDeckBtn").addEventListener("click",openArticleDeck);
 $("#weakReviewBtn").addEventListener("click",openWeakDeck);
@@ -828,7 +906,7 @@ $("#resetBtn").addEventListener("click",()=>{if(confirm("Hapus semua progress de
 let deferredPrompt=null;
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;$("#installBtn").classList.remove("hidden");});
 $("#installBtn").addEventListener("click",async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$("#installBtn").classList.add("hidden");});
-if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=5").catch(()=>{}));}
+if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=6").catch(()=>{}));}
 
 initSelects();
 loadDemo();

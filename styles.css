@@ -393,3 +393,14 @@ body::before{
   .mobile-nav{grid-template-columns:repeat(6,1fr)}
   .mobile-nav .nav-btn{font-size:16px}
 }
+
+/* ===== V6 URL Import ===== */
+.url-import-btn{
+  background:linear-gradient(135deg,#ffd36b,#f6aa55);
+  color:#5e3511;
+  box-shadow:0 10px 25px rgba(224,157,67,.18);
+}
+.url-import-btn:disabled{opacity:.65;cursor:wait}
+.url-import-note{
+  margin-top:10px;color:#7f6175;font-size:12px;line-height:1.55
+}

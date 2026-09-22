@@ -28,3 +28,10 @@ html[data-theme="shinbun"]{--bg:#ece9df;--surface:#f8f5eb;--surface2:#e8e3d5;--t
 
 @media(max-width:900px){.practice-header{flex-direction:column}.practice-summary{justify-content:flex-start}.practice-layout{grid-template-columns:1fr}.practice-stage{min-height:auto}.practice-settings{order:2}.practice-form-grid{grid-template-columns:1fr 1fr}.matching-area{gap:8px}.weak-item{grid-template-columns:1fr auto}.weak-item .text-btn{grid-column:1/-1;width:100%;background:var(--surface);border:1px solid var(--border)}.mastery-row{grid-template-columns:1fr 1fr 42px}.practice-tabs{padding:9px;position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--surface) 96%,transparent);backdrop-filter:blur(10px)}}
 @media(max-width:520px){.practice-form-grid,.quiz-options{grid-template-columns:1fr}.practice-flashcard{min-height:300px;padding:22px 14px}.practice-main{font-size:38px}.matching-area{grid-template-columns:1fr 1fr}.match-item{font-size:12px;padding:8px}.mastery-row{grid-template-columns:1fr}.mastery-row em{text-align:left}.typing-actions{flex-direction:column}.typing-actions button{width:100%}}
+
+/* V8.1.1 permanent AI backend */
+.status-pills{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.backend-status[data-status=online]{font-weight:800}
+.backend-status[data-status=offline]{font-weight:800;opacity:.72}
+.example-jp{font-size:1.08em;font-weight:800;margin-bottom:4px}
+.example-reading{font-size:.92em;opacity:.72;margin-top:0}

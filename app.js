@@ -7,6 +7,69 @@ const STORAGE = {
   practice: 'goiscope_v8_1_practice'
 };
 
+const API_BASE_URL = 'https://goiscope-ai-backend-jlptn-1and-n2.vercel.app';
+const apiUrl = path => `${API_BASE_URL}${path.startsWith('/') ? path : '/' + path}`;
+
+function normalizeVocabItem(v={}){
+  return {
+    word: v.word || '',
+    reading: v.reading || '',
+    meaning: v.meaning || '',
+    jlpt: v.jlpt || v.level || 'ADV',
+    register: v.register || v.topic || '',
+    nuance: v.nuance || '',
+    synonyms: v.synonyms || v.similar || [],
+    collocations: v.collocations || [],
+    example: v.example || '',
+    exampleReading: v.exampleReading || '',
+    exampleMeaning: v.exampleMeaning || ''
+  };
+}
+
+function normalizeArticleResponse(data={}){
+  const paragraphs=(data.paragraphs||[]).map(p=>{
+    const details=(p.vocabDetails||p.vocabulary||[]).map(normalizeVocabItem).filter(v=>v.word);
+    const highlights=(p.highlights||details.map(v=>v.word)).filter(Boolean);
+    return {
+      jp: p.jp || p.japanese || '',
+      furigana: p.furigana || '',
+      id: p.id || p.translation || '',
+      highlights,
+      vocabDetails: details
+    };
+  });
+  return {
+    title: data.title || 'Artikel Jepang',
+    category: data.category || 'Artikel',
+    source: data.source || '',
+    paragraphs
+  };
+}
+
+function findArticleVocab(word){
+  for(const p of currentArticle?.paragraphs||[]){
+    const found=(p.vocabDetails||[]).find(v=>v.word===word);
+    if(found)return found;
+  }
+  return null;
+}
+
+async function checkBackendHealth(){
+  const el=$('#backendStatus');
+  if(el){el.textContent='AI: checking…';el.dataset.status='checking'}
+  try{
+    const res=await fetch(apiUrl('/api/health'),{cache:'no-store'});
+    if(!res.ok)throw new Error(`HTTP ${res.status}`);
+    const data=await res.json();
+    if(!data?.ok)throw new Error('Backend not ready');
+    if(el){el.textContent='AI Backend: Online';el.dataset.status='online'}
+    return true;
+  }catch(err){
+    if(el){el.textContent='AI Backend: Offline';el.dataset.status='offline'}
+    return false;
+  }
+}
+
 const themes = [
   {id:'sakura',name:'Sakura',desc:'pink lembut',swatch:'linear-gradient(135deg,#fff8fb,#f3a6c2,#db5f92)'},
   {id:'sumi',name:'Sumi Night',desc:'hitam + merah',swatch:'linear-gradient(135deg,#101114,#292c31,#e84f5f)'},
@@ -136,6 +199,7 @@ function saveAndRenderArticle(){
 }
 
 function renderArticle(){
+  if(currentArticle?.paragraphs?.some(p=>p.japanese||p.translation||p.vocabulary)) currentArticle=normalizeArticleResponse(currentArticle);
   $('#articleBody').style.setProperty('--reader-size',readerFont+'px');
   document.documentElement.style.setProperty('--reader-size',readerFont+'px');
   $('#fontSizeLabel').textContent=readerFont+'px';
@@ -204,14 +268,15 @@ async function openWordLookup(word,context,source){
   $('#lookupContent').innerHTML='';$('#lookupLoading').classList.remove('hidden');
   $('#lookupSheet').classList.add('open');$('#lookupSheet').setAttribute('aria-hidden','false');
   document.body.style.overflow='hidden';
-  const known=localDictionary[clean];
-  if(known){currentLookup={...currentLookup,...known};renderLookup(currentLookup);return}
+  const known=localDictionary[clean] || findArticleVocab(clean);
+  if(known){currentLookup={...currentLookup,...known,context:currentLookup.context};renderLookup(currentLookup);return}
   try{
-    const res=await fetch('/api/lookup-word',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word:clean,sentence:currentLookup.context,articleTitle:currentArticle?.title||''})});
-    if(!res.ok)throw new Error('lookup unavailable');
-    const data=await res.json();currentLookup={...currentLookup,...data};renderLookup(currentLookup);
+    const res=await fetch(apiUrl('/api/lookup-word'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word:clean,sentence:currentLookup.context,articleTitle:currentArticle?.title||''})});
+    if(!res.ok){const detail=await res.text();throw new Error(detail||`Lookup HTTP ${res.status}`)}
+    const data=await res.json();currentLookup={...currentLookup,...normalizeVocabItem(data),context:data.context||currentLookup.context};renderLookup(currentLookup);
   }catch(err){
-    currentLookup={...currentLookup,reading:'',meaning:'Belum ada analisis lokal untuk kata ini.',jlpt:'?',register:'',nuance:'Hubungkan endpoint AI V8 untuk mendapatkan reading, arti kontekstual, nuansa, sinonim, dan collocation secara otomatis.',synonyms:[],collocations:[]};renderLookup(currentLookup,true);
+    console.error('Word lookup failed:',err);
+    currentLookup={...currentLookup,reading:'',meaning:'AI lookup sedang tidak tersedia.',jlpt:'?',register:'',nuance:'Backend permanen tidak dapat dihubungi saat ini. Coba lagi setelah koneksi internet stabil.',synonyms:[],collocations:[]};renderLookup(currentLookup,true);
   }
 }
 
@@ -223,7 +288,8 @@ function renderLookup(d,fallback=false){
     <div class="lookup-block"><small>NUANSA</small><p>${escapeHTML(d.nuance||'—')}</p></div>
     <div class="lookup-block"><small>KONTEKS ARTIKEL</small><div class="context-box">${escapeHTML(d.context||'')}</div></div>
     ${d.synonyms?.length?`<div class="lookup-block"><small>SINONIM / KATA MIRIP</small><div class="lookup-chips">${d.synonyms.map(x=>`<span>${escapeHTML(x)}</span>`).join('')}</div></div>`:''}
-    ${d.collocations?.length?`<div class="lookup-block"><small>COLLOCATION</small><div class="lookup-chips">${d.collocations.map(x=>`<span>${escapeHTML(x)}</span>`).join('')}</div></div>`:''}`;
+    ${d.collocations?.length?`<div class="lookup-block"><small>COLLOCATION</small><div class="lookup-chips">${d.collocations.map(x=>`<span>${escapeHTML(x)}</span>`).join('')}</div></div>`:''}
+    ${d.example?`<div class="lookup-block"><small>CONTOH KALIMAT</small><p class="example-jp">${escapeHTML(d.example)}</p>${d.exampleReading?`<p class="example-reading">${escapeHTML(d.exampleReading)}</p>`:''}${d.exampleMeaning?`<p>${escapeHTML(d.exampleMeaning)}</p>`:''}</div>`:''}`;
   const exists=vocabBank.some(v=>v.word===d.word);$('#addVocabBtn').textContent=exists?'✓ Sudah di Vocabulary':'＋ Tambah ke Vocabulary';$('#addVocabBtn').disabled=exists;
 }
 
@@ -247,10 +313,12 @@ async function analyzeTextArticle(){
   const title=$('#articleTitleInput').value.trim()||'Artikel Jepang';
   const btn=$('#analyzeTextBtn');btn.disabled=true;btn.textContent='Menganalisis...';
   try{
-    const res=await fetch('/api/analyze-text',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,text})});
-    if(!res.ok)throw new Error('AI unavailable');currentArticle=await res.json();saveAndRenderArticle();setView('reader');toast('Analisis artikel selesai');
+    const res=await fetch(apiUrl('/api/analyze-text'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,text})});
+    if(!res.ok){const detail=await res.text();throw new Error(detail||`Analyze HTTP ${res.status}`)}
+    currentArticle=normalizeArticleResponse(await res.json());saveAndRenderArticle();setView('reader');toast('Analisis artikel selesai ✓');
   }catch(e){
-    currentArticle={title,category:'Custom',paragraphs:text.split(/\n\s*\n/).filter(Boolean).map(p=>({jp:p,furigana:'',id:'',highlights:[]}))};saveAndRenderArticle();toast('Teks dimuat. AI backend belum tersambung.');
+    console.error('Article analyze failed:',e);
+    currentArticle={title,category:'Custom',paragraphs:text.split(/\n\s*\n/).filter(Boolean).map(p=>({jp:p,furigana:'',id:'',highlights:[],vocabDetails:[]}))};saveAndRenderArticle();toast('AI gagal dihubungi. Teks tetap dimuat secara lokal.');
   }finally{btn.disabled=false;btn.textContent='Analisis dengan AI'}
 }
 
@@ -258,9 +326,9 @@ async function importUrlArticle(){
   const url=$('#articleUrlInput').value.trim();if(!url){toast('Masukkan URL artikel');return}
   const btn=$('#importUrlBtn');btn.disabled=true;btn.textContent='Mengambil artikel...';
   try{
-    const res=await fetch('/api/import-url',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
-    if(!res.ok)throw new Error(await res.text());currentArticle=await res.json();saveAndRenderArticle();toast('Artikel berhasil diimpor');
-  }catch(e){toast('URL gagal diambil. Coba Tempel teks.')}finally{btn.disabled=false;btn.textContent='Ambil & Analisis Artikel'}
+    const res=await fetch(apiUrl('/api/import-url'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
+    if(!res.ok)throw new Error(await res.text());currentArticle=normalizeArticleResponse(await res.json());saveAndRenderArticle();setView('reader');toast('URL berhasil diimpor & dianalisis ✓');
+  }catch(e){console.error('URL import failed:',e);toast('URL gagal diambil. Coba tab Tempel teks.')}finally{btn.disabled=false;btn.textContent='Ambil & Analisis Artikel'}
 }
 
 function applyReaderToggles(){
@@ -470,6 +538,6 @@ function initInstall(){
 
 function init(){
   applyTheme(localStorage.getItem(STORAGE.theme)||'sakura');initNav();initSourceTabs();initLookup();initReaderControls();initPractice();initAudio();initInstall();
-  $('#vocabSearch').addEventListener('input',renderVocab);setReaderFont(readerFont);renderArticle();renderVocab();renderPractice();updateStats();
+  $('#vocabSearch').addEventListener('input',renderVocab);setReaderFont(readerFont);renderArticle();renderVocab();renderPractice();updateStats();checkBackendHealth();
 }
 init();

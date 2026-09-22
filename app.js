@@ -1,1018 +1,316 @@
+const STORAGE = {
+  theme: 'goiscope_v8_theme',
+  vocab: 'goiscope_v8_vocab',
+  lookups: 'goiscope_v8_lookups',
+  article: 'goiscope_v8_article',
+  font: 'goiscope_v8_font'
+};
 
-const DB = [
-  {id:"teimei",word:"低迷",reading:"ていめい",meaning:"stagnasi; kondisi lesu",level:"N1",topic:"経済",nuance:"Berada pada tingkat rendah atau lesu untuk suatu periode; sering untuk ekonomi, penjualan, dukungan.",similar:["停滞（ていたい）","不振（ふしん）","低調（ていちょう）"],collocations:["景気が低迷する","売上が低迷する","支持率が低迷する"],example:"国内需要が低迷している。",exampleReading:"こくない じゅよう が ていめい している。",exampleMeaning:"Permintaan domestik sedang lesu."},
-  {id:"sokushin",word:"促進",reading:"そくしん",meaning:"mendorong; mempercepat kemajuan",level:"N2",topic:"経済",nuance:"Membuat suatu proses/perkembangan berlangsung lebih cepat.",similar:["推進（すいしん）","促す（うながす）","奨励（しょうれい）"],collocations:["消費を促進する","成長を促進する","交流を促進する"],example:"政府は消費を促進する政策を導入した。",exampleReading:"せいふ は しょうひ を そくしん する せいさく を どうにゅう した。",exampleMeaning:"Pemerintah memperkenalkan kebijakan untuk mendorong konsumsi."},
-  {id:"hippaku",word:"逼迫",reading:"ひっぱく",meaning:"terdesak; sangat ketat; mengalami tekanan berat",level:"N1",topic:"経済",nuance:"Situasi kekurangan atau tekanan serius, misalnya keuangan, pasokan, tempat tidur rumah sakit.",similar:["切迫（せっぱく）","不足（ふそく）","窮迫（きゅうはく）"],collocations:["財政が逼迫する","需給が逼迫する","病床が逼迫する"],example:"原材料の供給が逼迫している。",exampleReading:"げんざいりょう の きょうきゅう が ひっぱく している。",exampleMeaning:"Pasokan bahan baku sedang sangat ketat."},
-  {id:"kanwa",word:"緩和",reading:"かんわ",meaning:"pelonggaran; meredakan",level:"N1",topic:"経済",nuance:"Mengurangi tingkat keketatan, tekanan, gejala, atau aturan.",similar:["軽減（けいげん）","緩む（ゆるむ）","和らげる（やわらげる）"],collocations:["規制を緩和する","緊張を緩和する","痛みを緩和する"],example:"政府は一部の規制を緩和した。",exampleReading:"せいふ は いちぶ の きせい を かんわ した。",exampleMeaning:"Pemerintah melonggarkan sebagian regulasi."},
-  {id:"zeisei",word:"是正",reading:"ぜせい",meaning:"koreksi; memperbaiki keadaan yang tidak tepat",level:"N1",topic:"社会",nuance:"Memperbaiki ketimpangan, kesalahan, atau keadaan yang dianggap tidak semestinya.",similar:["改善（かいぜん）","修正（しゅうせい）","訂正（ていせい）"],collocations:["格差を是正する","偏りを是正する","不公平を是正する"],example:"地域間の格差を是正する必要がある。",exampleReading:"ちいきかん の かくさ を ぜせい する ひつよう が ある。",exampleMeaning:"Perlu memperbaiki ketimpangan antarwilayah."},
-  {id:"kencho",word:"顕著",reading:"けんちょ",meaning:"mencolok; nyata; signifikan",level:"N1",topic:"社会",nuance:"Sesuatu terlihat jelas dalam data, gejala, perbedaan, atau perubahan; nuansa formal.",similar:["著しい（いちじるしい）","明白（めいはく）","際立つ（きわだつ）"],collocations:["顕著な傾向","顕著な増加","顕著に表れる"],example:"高齢化の影響が顕著になっている。",exampleReading:"こうれいか の えいきょう が けんちょ に なっている。",exampleMeaning:"Dampak penuaan penduduk menjadi semakin nyata."},
-  {id:"shutai",word:"衰退",reading:"すいたい",meaning:"kemunduran; decline",level:"N1",topic:"社会",nuance:"Kemunduran bertahap dari industri, budaya, organisasi, daerah, dan sebagainya.",similar:["減退（げんたい）","低下（ていか）","悪化（あっか）"],collocations:["産業が衰退する","地域が衰退する","文化の衰退"],example:"人口減少で地域産業が衰退している。",exampleReading:"じんこう げんしょう で ちいき さんぎょう が すいたい している。",exampleMeaning:"Industri daerah mengalami kemunduran akibat penurunan populasi."},
-  {id:"kakusa",word:"格差",reading:"かくさ",meaning:"kesenjangan; disparity",level:"N2",topic:"社会",nuance:"Perbedaan tingkat atau kondisi antarkelompok, daerah, pendapatan, pendidikan, dll.",similar:["差（さ）","不均衡（ふきんこう）","隔たり（へだたり）"],collocations:["所得格差","地域格差","格差が広がる"],example:"所得格差の拡大が問題となっている。",exampleReading:"しょとく かくさ の かくだい が もんだい と なっている。",exampleMeaning:"Melebarnya kesenjangan pendapatan menjadi masalah."},
-  {id:"shutoku",word:"習得",reading:"しゅうとく",meaning:"menguasai; memperoleh keterampilan",level:"N1",topic:"教育",nuance:"Memperoleh pengetahuan/keterampilan melalui belajar dan latihan sampai dapat digunakan.",similar:["修得（しゅうとく）","獲得（かくとく）","身につける"],collocations:["技能を習得する","語学を習得する","知識を習得する"],example:"専門技能を習得するには時間がかかる。",exampleReading:"せんもん ぎのう を しゅうとく する に は じかん が かかる。",exampleMeaning:"Diperlukan waktu untuk menguasai keterampilan khusus."},
-  {id:"rishu",word:"履修",reading:"りしゅう",meaning:"mengambil/menyelesaikan mata kuliah",level:"N1",topic:"教育",nuance:"Istilah formal pendidikan untuk mengikuti mata pelajaran atau mata kuliah tertentu.",similar:["受講（じゅこう）","修了（しゅうりょう）"],collocations:["科目を履修する","履修登録","必修科目"],example:"学生は必修科目を履修しなければならない。",exampleReading:"がくせい は ひっしゅう かもく を りしゅう しなければ ならない。",exampleMeaning:"Mahasiswa harus mengambil mata kuliah wajib."},
-  {id:"kyoiku_katei",word:"教育課程",reading:"きょういくかてい",meaning:"kurikulum; program pendidikan",level:"ADV",topic:"教育",nuance:"Istilah pendidikan formal untuk struktur/urutan mata pelajaran dan kegiatan belajar.",similar:["カリキュラム","学習指導要領（がくしゅうしどうようりょう）"],collocations:["教育課程を編成する","教育課程の改訂"],example:"学校は新しい教育課程を導入した。",exampleReading:"がっこう は あたらしい きょういくかてい を どうにゅう した。",exampleMeaning:"Sekolah menerapkan kurikulum baru."},
-  {id:"kensho",word:"検証",reading:"けんしょう",meaning:"verifikasi; menguji kebenaran",level:"N1",topic:"技術",nuance:"Memeriksa berdasarkan data/bukti apakah sesuatu benar, efektif, atau sesuai.",similar:["確認（かくにん）","実証（じっしょう）","検討（けんとう）"],collocations:["効果を検証する","仮説を検証する","データで検証する"],example:"実験結果を詳しく検証する。",exampleReading:"じっけん けっか を くわしく けんしょう する。",exampleMeaning:"Memverifikasi hasil eksperimen secara rinci."},
-  {id:"fukyu",word:"普及",reading:"ふきゅう",meaning:"penyebaran luas; adopsi luas",level:"N2",topic:"技術",nuance:"Sesuatu menjadi umum dan digunakan oleh banyak orang.",similar:["浸透（しんとう）","拡大（かくだい）","広まる"],collocations:["技術が普及する","スマホの普及","普及率"],example:"生成AIが急速に普及している。",exampleReading:"せいせい AI が きゅうそく に ふきゅう している。",exampleMeaning:"AI generatif menyebar dengan cepat."},
-  {id:"kakushin",word:"革新",reading:"かくしん",meaning:"inovasi; pembaruan besar",level:"N1",topic:"技術",nuance:"Perubahan besar yang memperbarui sistem, teknologi, atau cara lama.",similar:["改革（かいかく）","刷新（さっしん）","イノベーション"],collocations:["技術革新","革新的な発想","制度を革新する"],example:"技術革新が産業構造を変えつつある。",exampleReading:"ぎじゅつ かくしん が さんぎょう こうぞう を かえつつ ある。",exampleMeaning:"Inovasi teknologi sedang mengubah struktur industri."},
-  {id:"zeijakusei",word:"脆弱性",reading:"ぜいじゃくせい",meaning:"kerentanan; vulnerability",level:"ADV",topic:"技術",nuance:"Kelemahan yang dapat menimbulkan risiko, terutama keamanan sistem.",similar:["弱点（じゃくてん）","欠陥（けっかん）"],collocations:["システムの脆弱性","脆弱性を修正する"],example:"ソフトウェアの脆弱性が発見された。",exampleReading:"ソフトウェア の ぜいじゃくせい が はっけん された。",exampleMeaning:"Ditemukan kerentanan pada perangkat lunak."},
-  {id:"hozen",word:"保全",reading:"ほぜん",meaning:"pelestarian; konservasi",level:"N1",topic:"環境",nuance:"Menjaga lingkungan, sumber daya, fasilitas atau kondisi agar tetap baik.",similar:["保護（ほご）","保存（ほぞん）","維持（いじ）"],collocations:["自然環境を保全する","生態系の保全","森林保全"],example:"生態系を保全する取り組みが進んでいる。",exampleReading:"せいたいけい を ほぜん する とりくみ が すすんでいる。",exampleMeaning:"Upaya melestarikan ekosistem sedang berkembang."},
-  {id:"haishutsu",word:"排出",reading:"はいしゅつ",meaning:"emisi; pelepasan keluar",level:"N2",topic:"環境",nuance:"Mengeluarkan gas, limbah, zat, atau material dari suatu sistem.",similar:["放出（ほうしゅつ）","排気（はいき）"],collocations:["CO2を排出する","排出量","温室効果ガスの排出"],example:"企業は排出量の削減を求められている。",exampleReading:"きぎょう は はいしゅつりょう の さくげん を もとめられている。",exampleMeaning:"Perusahaan dituntut mengurangi jumlah emisi."},
-  {id:"assho",word:"圧勝",reading:"あっしょう",meaning:"menang telak",level:"N1",topic:"スポーツ",nuance:"Kemenangan dengan selisih atau dominasi besar.",similar:["大勝（たいしょう）","完勝（かんしょう）"],collocations:["相手に圧勝する","圧勝を収める"],example:"代表チームは決勝で圧勝した。",exampleReading:"だいひょう チーム は けっしょう で あっしょう した。",exampleMeaning:"Tim nasional menang telak di final."},
-  {id:"sekisen",word:"接戦",reading:"せっせん",meaning:"pertandingan ketat; close contest",level:"N1",topic:"スポーツ",nuance:"Pertandingan dengan selisih kecil dan hasil sulit diprediksi.",similar:["僅差（きんさ）","競り合い（せりあい）"],collocations:["接戦を制する","接戦になる"],example:"試合は最後まで接戦となった。",exampleReading:"しあい は さいご まで せっせん と なった。",exampleMeaning:"Pertandingan berlangsung ketat hingga akhir."},
-  {id:"shuen",word:"主演",reading:"しゅえん",meaning:"pemeran utama; membintangi",level:"N2",topic:"エンタメ",nuance:"Menjadi aktor/aktris utama dalam film, drama, atau pertunjukan.",similar:["主役（しゅやく）","出演（しゅつえん）"],collocations:["映画に主演する","主演俳優","主演作"],example:"人気俳優が新作映画に主演する。",exampleReading:"にんき はいゆう が しんさく えいが に しゅえん する。",exampleMeaning:"Aktor populer membintangi film baru."},
-  {id:"kogyou",word:"興行",reading:"こうぎょう",meaning:"pertunjukan komersial; box office/penyelenggaraan",level:"N1",topic:"エンタメ",nuance:"Penyelenggaraan pertunjukan sebagai bisnis; juga muncul pada 興行収入.",similar:["公演（こうえん）","上演（じょうえん）"],collocations:["興行収入","興行成績","興行を行う"],example:"その映画は高い興行収入を記録した。",exampleReading:"その えいが は たかい こうぎょう しゅうにゅう を きろく した。",exampleMeaning:"Film itu mencatat pendapatan box office yang tinggi."},
-  {id:"uti_dasu",word:"打ち出す",reading:"うちだす",meaning:"mengemukakan; meluncurkan kebijakan/arah",level:"ADV",topic:"経済",nuance:"News/formal: secara jelas mengumumkan atau mengajukan kebijakan, strategi, konsep.",similar:["発表する（はっぴょうする）","掲げる（かかげる）","提示する（ていじする）"],collocations:["政策を打ち出す","方針を打ち出す","対策を打ち出す"],example:"政府は新たな支援策を打ち出した。",exampleReading:"せいふ は あらたな しえんさく を うちだした。",exampleMeaning:"Pemerintah mengumumkan langkah dukungan baru."},
-  {id:"sakiiki",word:"先行き",reading:"さきゆき",meaning:"prospek ke depan; outlook",level:"ADV",topic:"経済",nuance:"Arah atau kondisi masa depan; sangat sering pada berita ekonomi.",similar:["見通し（みとおし）","将来（しょうらい）","今後（こんご）"],collocations:["先行きが不透明","先行きへの懸念","景気の先行き"],example:"景気の先行きには不透明感が残る。",exampleReading:"けいき の さきゆき に は ふとうめいかん が のこる。",exampleMeaning:"Masih ada ketidakpastian mengenai prospek ekonomi ke depan."},
-  {id:"hatome",word:"歯止め",reading:"はどめ",meaning:"rem; penahan; upaya menghentikan tren buruk",level:"ADV",topic:"社会",nuance:"Kiasan berita: menghentikan memburuknya tren seperti penurunan populasi atau kenaikan harga.",similar:["抑制（よくせい）","阻止（そし）","食い止める（くいとめる）"],collocations:["減少に歯止めをかける","価格上昇に歯止め"],example:"人口減少に歯止めをかけるのは容易ではない。",exampleReading:"じんこう げんしょう に はどめ を かける の は ようい では ない。",exampleMeaning:"Tidak mudah menghentikan penurunan populasi."}
+const themes = [
+  {id:'sakura',name:'Sakura',desc:'pink lembut',swatch:'linear-gradient(135deg,#fff8fb,#f3a6c2,#db5f92)'},
+  {id:'sumi',name:'Sumi Night',desc:'hitam + merah',swatch:'linear-gradient(135deg,#101114,#292c31,#e84f5f)'},
+  {id:'matcha',name:'Matcha',desc:'cream + hijau',swatch:'linear-gradient(135deg,#f5f5eb,#b6c69a,#6f8c54)'},
+  {id:'seigaiha',name:'Seigaiha',desc:'biru Jepang',swatch:'linear-gradient(135deg,#f5faff,#91c9ee,#3078b8)'},
+  {id:'neon',name:'Tokyo Neon',desc:'night + neon',swatch:'linear-gradient(135deg,#0d0b18,#d252ff,#46d9ff)'},
+  {id:'shinbun',name:'Shinbun',desc:'koran Jepang',swatch:'linear-gradient(135deg,#f8f5eb,#c8c0ad,#393733)'}
 ];
 
-const DEMO = {
-  title:"物価上昇と消費行動の変化",
-  category:"経済",
+const demoArticle = {
+  title:'物価上昇を踏まえ、消費者の選択にも変化',
+  category:'経済・社会',
   paragraphs:[
     {
-      jp:"物価の上昇が続く中、家計の負担が増え、消費者の節約志向が一段と強まっている。特に食料品や光熱費の値上がりは生活に直接影響し、国内需要の低迷につながるとの懸念もある。",
-      reading:"ぶっか の じょうしょう が つづく なか、かけい の ふたん が ふえ、しょうひしゃ の せつやく しこう が いちだん と つよまっている。とくに しょくりょうひん や こうねつひ の ねあがり は せいかつ に ちょくせつ えいきょう し、こくない じゅよう の ていめい に つながる との けねん も ある。",
-      id:"Di tengah kenaikan harga yang terus berlanjut, beban rumah tangga meningkat dan kecenderungan konsumen untuk berhemat semakin kuat. Kenaikan harga makanan dan biaya listrik/gas khususnya berdampak langsung pada kehidupan sehari-hari, sehingga muncul kekhawatiran hal itu dapat menyebabkan lesunya permintaan domestik.",
-      vocab:["teimei"]
+      jp:'物価の上昇を踏まえ、消費者の間では日々の支出を見直す動きが広がっている。特に、これまで習慣的に購入していた商品についても、本当に必要かどうかを慎重に判断する人が増えた。',
+      furigana:'ぶっか の じょうしょう を ふまえ、しょうひしゃ の あいだ では ひび の ししゅつ を みなおす うごき が ひろがっている。とくに、これまで しゅうかんてき に こうにゅう していた しょうひん についても、ほんとう に ひつよう か どうか を しんちょう に はんだん する ひと が ふえた。',
+      id:'Dengan mempertimbangkan kenaikan harga, semakin banyak konsumen yang meninjau kembali pengeluaran sehari-hari. Bahkan untuk barang yang sebelumnya dibeli karena kebiasaan, semakin banyak orang menilai dengan hati-hati apakah barang tersebut benar-benar diperlukan.',
+      highlights:['物価','踏まえ','支出','見直す','習慣的','慎重']
     },
     {
-      jp:"政府は消費を促進するため、新たな支援策を打ち出した。一方、原材料の供給逼迫や人手不足が続けば、企業のコスト負担はさらに増える可能性がある。",
-      reading:"せいふ は しょうひ を そくしん する ため、あらたな しえんさく を うちだした。いっぽう、げんざいりょう の きょうきゅう ひっぱく や ひとでぶそく が つづけば、きぎょう の コスト ふたん は さらに ふえる かのうせい が ある。",
-      id:"Pemerintah mengumumkan langkah dukungan baru untuk mendorong konsumsi. Namun, jika ketatnya pasokan bahan baku dan kekurangan tenaga kerja berlanjut, beban biaya perusahaan berpotensi meningkat lebih jauh.",
-      vocab:["sokushin","uti_dasu","hippaku"]
+      jp:'一方、企業側も価格だけでなく、品質や利便性をどのように訴求するかが問われている。値上げを余儀なくされた企業の中には、内容量やサービスを工夫することで顧客離れを防ごうとする動きも見られる。',
+      furigana:'いっぽう、きぎょうがわ も かかく だけ でなく、ひんしつ や りべんせい を どのように そきゅう するか が とわれている。ねあげ を よぎなくされた きぎょう の なか には、ないようりょう や サービス を くふう することで こきゃくばなれ を ふせごう とする うごき も みられる。',
+      id:'Di sisi lain, perusahaan juga dituntut memikirkan cara menonjolkan bukan hanya harga, tetapi kualitas dan kemudahan. Sejumlah perusahaan yang terpaksa menaikkan harga berupaya mencegah pelanggan pergi dengan mengubah isi produk atau layanan.',
+      highlights:['訴求','問われている','余儀なくされた','顧客離れ']
     },
     {
-      jp:"専門家は、規制緩和や賃上げだけでは十分ではなく、所得格差の是正や将来不安の軽減など、複数の施策を組み合わせる必要があると指摘する。",
-      reading:"せんもんか は、きせい かんわ や ちんあげ だけ では じゅうぶん では なく、しょとく かくさ の ぜせい や しょうらい ふあん の けいげん など、ふくすう の しさく を くみあわせる ひつよう が ある と してき する。",
-      id:"Para ahli menunjukkan bahwa pelonggaran regulasi dan kenaikan upah saja tidak cukup; diperlukan kombinasi berbagai kebijakan, termasuk memperbaiki kesenjangan pendapatan dan mengurangi kecemasan terhadap masa depan.",
-      vocab:["kanwa","kakusa","zeisei"]
-    },
-    {
-      jp:"景気の先行きには依然として不透明感が残っており、物価上昇に歯止めがかかるかどうかが今後の焦点となる。",
-      reading:"けいき の さきゆき に は いぜん として ふとうめいかん が のこっており、ぶっか じょうしょう に はどめ が かかる か どうか が こんご の しょうてん と なる。",
-      id:"Prospek ekonomi ke depan masih diliputi ketidakpastian. Apakah kenaikan harga dapat diredam atau tidak akan menjadi salah satu fokus utama selanjutnya.",
-      vocab:["sakiiki","hatome"]
+      jp:'こうした変化は一時的な節約志向にとどまらず、消費行動そのものを大きく変える可能性がある。専門家は、家計への影響を見極めながら、中長期的な傾向を注視する必要があると指摘している。',
+      furigana:'こうした へんか は いちじてき な せつやくしこう に とどまらず、しょうひこうどう そのもの を おおきく かえる かのうせい が ある。せんもんか は、かけい への えいきょう を みきわめながら、ちゅうちょうきてき な けいこう を ちゅうし する ひつよう が ある と してき している。',
+      id:'Perubahan ini mungkin tidak berhenti pada kecenderungan berhemat sementara, tetapi dapat mengubah perilaku konsumsi itu sendiri. Para ahli menunjukkan perlunya mengamati tren jangka menengah dan panjang sambil menilai dampaknya terhadap rumah tangga.',
+      highlights:['節約志向','にとどまらず','見極め','中長期的','注視','指摘']
     }
   ]
 };
 
-const state = {
-  view:"home",
-  flashIndex:0,
-  flashDeck:[],
-  quiz:[],
-  quizIndex:0,
-  quizScore:0,
-  quizAnswered:false,
-  articleDeckIds:[],
-  bookmarkOnly:false,
-  weakOnly:false,
-  currentArticleTitle:"",
-  currentArticleCategory:"",
-  currentArticleData:null,
-  activeWordId:null
+const localDictionary = {
+  '踏まえる':{reading:'ふまえる',meaning:'mempertimbangkan; berlandaskan pada',jlpt:'N1',register:'formal / tulisan',nuance:'Dipakai ketika keputusan atau pembahasan dibuat dengan menjadikan fakta, kondisi, pengalaman, atau hasil tertentu sebagai dasar.',synonyms:['考慮する','基づく'],collocations:['状況を踏まえる','結果を踏まえる','経験を踏まえる']},
+  '踏まえ':{reading:'ふまえ',meaning:'dengan mempertimbangkan; berdasarkan',jlpt:'N1',register:'formal / tulisan',nuance:'Bentuk 連用形 dari 踏まえる yang sering muncul sebagai ～を踏まえ(て).',synonyms:['考慮して','基づいて'],collocations:['現状を踏まえ','結果を踏まえて']},
+  '物価':{reading:'ぶっか',meaning:'harga barang secara umum; tingkat harga',jlpt:'N2',register:'berita / ekonomi',nuance:'Mengacu pada tingkat harga barang dan jasa secara umum, bukan harga satu produk saja.',synonyms:['価格水準'],collocations:['物価が上昇する','物価高','物価指数']},
+  '支出':{reading:'ししゅつ',meaning:'pengeluaran',jlpt:'N2',register:'formal',nuance:'Uang yang dikeluarkan; sering dipakai dalam konteks rumah tangga, perusahaan, atau anggaran.',synonyms:['出費'],collocations:['支出を抑える','支出が増える','家計支出']},
+  '見直す':{reading:'みなおす',meaning:'meninjau kembali; mengevaluasi ulang',jlpt:'N2',register:'umum / bisnis',nuance:'Melihat kembali sesuatu lalu mempertimbangkan perubahan atau perbaikan.',synonyms:['再検討する'],collocations:['計画を見直す','制度を見直す','支出を見直す']},
+  '習慣的':{reading:'しゅうかんてき',meaning:'bersifat kebiasaan; habitual',jlpt:'N2+',register:'formal',nuance:'Menunjukkan tindakan yang dilakukan sebagai kebiasaan secara berulang.',synonyms:['日常的'],collocations:['習慣的に行う','習慣的な行動']},
+  '慎重':{reading:'しんちょう',meaning:'hati-hati; cermat',jlpt:'N2',register:'umum',nuance:'Tidak tergesa-gesa dan mempertimbangkan risiko atau akibat dengan teliti.',synonyms:['用心深い'],collocations:['慎重に判断する','慎重な姿勢']},
+  '訴求':{reading:'そきゅう',meaning:'menonjolkan daya tarik; appeal/promotion',jlpt:'N1+',register:'bisnis / marketing',nuance:'Menyampaikan nilai atau daya tarik produk kepada target agar menarik perhatian atau mendorong tindakan.',synonyms:['アピールする'],collocations:['魅力を訴求する','訴求力','顧客に訴求する']},
+  '問われている':{reading:'とわれている',meaning:'sedang dipertanyakan / dituntut',jlpt:'N1',register:'berita / formal',nuance:'Dalam tulisan berita sering berarti kemampuan, sikap, atau tanggung jawab sedang diuji atau dituntut.',synonyms:['求められている'],collocations:['姿勢が問われる','対応力が問われる']},
+  '余儀なくされた':{reading:'よぎなくされた',meaning:'terpaksa; tidak punya pilihan selain',jlpt:'N1',register:'sangat formal / berita',nuance:'Menekankan bahwa situasi eksternal memaksa seseorang melakukan sesuatu.',synonyms:['せざるを得なかった'],collocations:['変更を余儀なくされる','撤退を余儀なくされる']},
+  '顧客離れ':{reading:'こきゃくばなれ',meaning:'hilangnya pelanggan; customer attrition',jlpt:'ADV',register:'bisnis',nuance:'Keadaan ketika pelanggan berhenti memilih perusahaan, merek, atau layanan tertentu.',synonyms:['客離れ'],collocations:['顧客離れを防ぐ','顧客離れが進む']},
+  '節約志向':{reading:'せつやくしこう',meaning:'kecenderungan untuk berhemat',jlpt:'ADV',register:'berita / ekonomi',nuance:'志向 menunjukkan orientasi atau kecenderungan; frasa ini sering muncul dalam berita konsumsi.',synonyms:['倹約志向'],collocations:['節約志向が強まる','節約志向の消費者']},
+  '見極め':{reading:'みきわめ',meaning:'menilai dengan cermat; memastikan',jlpt:'N1',register:'formal',nuance:'Menentukan hakikat, kondisi, atau waktu yang tepat setelah mengamati dengan teliti.',synonyms:['見定める','判断する'],collocations:['影響を見極める','時期を見極める']},
+  '注視':{reading:'ちゅうし',meaning:'mengamati dengan saksama',jlpt:'N1',register:'berita / formal',nuance:'Lebih formal daripada 見る; sering dipakai untuk perkembangan ekonomi, politik, atau risiko.',synonyms:['注意深く見る','監視する'],collocations:['動向を注視する','推移を注視する']},
+  '指摘':{reading:'してき',meaning:'menunjukkan; mengemukakan suatu masalah/poin',jlpt:'N2',register:'formal / berita',nuance:'Menyebutkan poin yang dianggap penting, terutama masalah, kekurangan, atau fakta.',synonyms:['言及する'],collocations:['問題点を指摘する','専門家が指摘する']}
 };
+
+let currentView = 'home';
+let currentArticle = JSON.parse(localStorage.getItem(STORAGE.article) || 'null');
+let vocabBank = JSON.parse(localStorage.getItem(STORAGE.vocab) || '[]');
+let lookupCount = Number(localStorage.getItem(STORAGE.lookups) || 0);
+let currentLookup = null;
+let reviewIndex = 0;
+let readerFont = Number(localStorage.getItem(STORAGE.font) || 20);
+let selectedSound = 'lofi';
+let audioCtx = null, masterGain = null, soundTimer = null, localAudio = null, activeNodes = [];
+let deferredPrompt = null;
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 
-
-const ARTICLE_DB_NAME = "GoiScopeLibrary";
-const ARTICLE_DB_VERSION = 1;
-const ARTICLE_STORE = "articles";
-
-function openArticleDB(){
-  return new Promise((resolve,reject)=>{
-    const req=indexedDB.open(ARTICLE_DB_NAME,ARTICLE_DB_VERSION);
-    req.onupgradeneeded=()=>{
-      const db=req.result;
-      if(!db.objectStoreNames.contains(ARTICLE_STORE)){
-        const store=db.createObjectStore(ARTICLE_STORE,{keyPath:"id"});
-        store.createIndex("savedAt","savedAt");
-        store.createIndex("category","category");
-      }
-    };
-    req.onsuccess=()=>resolve(req.result);
-    req.onerror=()=>reject(req.error);
-  });
-}
-async function dbPutArticle(article){
-  const db=await openArticleDB();
-  return new Promise((resolve,reject)=>{
-    const tx=db.transaction(ARTICLE_STORE,"readwrite");
-    tx.objectStore(ARTICLE_STORE).put(article);
-    tx.oncomplete=()=>{db.close();resolve(article);};
-    tx.onerror=()=>{db.close();reject(tx.error);};
-  });
-}
-async function dbGetArticles(){
-  const db=await openArticleDB();
-  return new Promise((resolve,reject)=>{
-    const tx=db.transaction(ARTICLE_STORE,"readonly");
-    const req=tx.objectStore(ARTICLE_STORE).getAll();
-    req.onsuccess=()=>{
-      const rows=(req.result||[]).sort((a,b)=>(b.savedAt||0)-(a.savedAt||0));
-      db.close();resolve(rows);
-    };
-    req.onerror=()=>{db.close();reject(req.error);};
-  });
-}
-async function dbGetArticle(id){
-  const db=await openArticleDB();
-  return new Promise((resolve,reject)=>{
-    const tx=db.transaction(ARTICLE_STORE,"readonly");
-    const req=tx.objectStore(ARTICLE_STORE).get(id);
-    req.onsuccess=()=>{db.close();resolve(req.result||null);};
-    req.onerror=()=>{db.close();reject(req.error);};
-  });
-}
-async function dbDeleteArticle(id){
-  const db=await openArticleDB();
-  return new Promise((resolve,reject)=>{
-    const tx=db.transaction(ARTICLE_STORE,"readwrite");
-    tx.objectStore(ARTICLE_STORE).delete(id);
-    tx.oncomplete=()=>{db.close();resolve();};
-    tx.onerror=()=>{db.close();reject(tx.error);};
-  });
-}
-async function dbClearArticles(){
-  const db=await openArticleDB();
-  return new Promise((resolve,reject)=>{
-    const tx=db.transaction(ARTICLE_STORE,"readwrite");
-    tx.objectStore(ARTICLE_STORE).clear();
-    tx.oncomplete=()=>{db.close();resolve();};
-    tx.onerror=()=>{db.close();reject(tx.error);};
-  });
-}
-function makeArticleId(title,text){
-  let hash=2166136261;
-  const str=(title+"|"+text).slice(0,250000);
-  for(let i=0;i<str.length;i++){hash^=str.charCodeAt(i);hash=Math.imul(hash,16777619);}
-  return "article_"+(hash>>>0).toString(16);
-}
-function articleWordCount(article){
-  const ids=new Set();
-  (article.paragraphs||[]).forEach(p=>(p.vocabulary||p.vocab||[]).forEach(v=>{
-    if(typeof v==="string") ids.add(v);
-    else if(v&&v.word) ids.add(v.word);
-  }));
-  return ids.size;
-}
-async function saveCurrentArticle(showAlert=true){
-  const a=state.currentArticleData;
-  if(!a || !(a.paragraphs||[]).length){
-    if(showAlert) alert("Belum ada hasil artikel yang bisa disimpan.");
-    return;
-  }
-  const text=(a.paragraphs||[]).map(p=>p.japanese||p.jp||"").join("\n\n");
-  const record={
-    ...a,
-    id:a.id || makeArticleId(a.title||"",text),
-    source:$("#articleSourceInput")?.value.trim() || a.source || "",
-    savedAt:Date.now(),
-    version:5
-  };
-  await dbPutArticle(record);
-  state.currentArticleData=record;
-  const status=$("#articleSaveStatus");
-  if(status){
-    status.textContent="✓ Artikel tersimpan di Library perangkat ini.";
-    status.classList.remove("hidden");
-  }
-  addActivity(`Menyimpan artikel: ${record.title||"Tanpa judul"}`);
-  if(showAlert) alert("Artikel sudah disimpan ke Library.");
-  renderLibrary();
-}
-
-function loadProgress(){
-  return JSON.parse(localStorage.getItem("goiLabProgress") || '{"ratings":{},"quizCorrect":0,"quizTotal":0,"activity":[],"bookmarks":[]}');
-}
-function saveProgress(p){
-  if(!p.bookmarks) p.bookmarks=[];
-  localStorage.setItem("goiLabProgress", JSON.stringify(p));
-}
-function isBookmarked(id){
-  const p=loadProgress();
-  return (p.bookmarks||[]).includes(id);
-}
-function toggleBookmark(id){
-  const p=loadProgress();
-  p.bookmarks=p.bookmarks||[];
-  if(p.bookmarks.includes(id)) p.bookmarks=p.bookmarks.filter(x=>x!==id);
-  else p.bookmarks.push(id);
-  saveProgress(p);
-  addActivity(`${p.bookmarks.includes(id)?"Tambah Bank Kata":"Hapus Bank Kata"} ${DB.find(v=>v.id===id)?.word||id}`);
-  renderVocab();
-  renderHome();
-}
-
-
-function getImportUrlEndpoint(){
-  const analyze = getAIEndpoint();
-  if(!analyze) return "";
-  if(analyze.includes("/api/analyze")) return analyze.replace("/api/analyze","/api/import-url");
-  return analyze.replace(/\/+$/,"") + "/api/import-url";
-}
-
-function getAIEndpoint(){
-  return localStorage.getItem("goiLabAIEndpoint") || "";
-}
-function setAIEndpoint(value){
-  localStorage.setItem("goiLabAIEndpoint", value || "");
-}
-function syncAIEndpointUI(){
-  const input=$("#aiEndpointInput");
-  const pill=$("#aiStatusPill");
-  const value=getAIEndpoint();
-  if(input) input.value=value;
-  if(pill) pill.textContent=value ? "Endpoint tersimpan" : "Belum terhubung";
-}
-function saveAIConfig(){
-  const value=$("#aiEndpointInput").value.trim();
-  setAIEndpoint(value);
-  syncAIEndpointUI();
-  addActivity(value ? "Menyimpan endpoint AI" : "Mengosongkan endpoint AI");
-  alert(value ? "Endpoint AI disimpan." : "Endpoint AI dikosongkan.");
-}
-
-function addActivity(text){
-  const p=loadProgress();
-  p.activity.unshift({text,time:new Date().toLocaleString("id-ID")});
-  p.activity=p.activity.slice(0,12);
-  saveProgress(p);
-}
-function mastery(v){
-  const r=loadProgress().ratings[v.id];
-  const score={again:0,hard:1,good:2,easy:3}[r] ?? 0;
-  return score;
-}
-function masteryPct(v){ return [10,40,72,100][mastery(v)]; }
+function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),1800)}
+function escapeHTML(s=''){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 
 function setView(id){
-  state.view=id;
-  $$(".view").forEach(v=>v.classList.toggle("active",v.id===id));
-  $$(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.view===id));
-  const titles={home:"Dashboard",article:"Artikel",vocab:"Vocabulary",library:"Library",flashcards:"Flashcard",quiz:"Quiz",progress:"Progress"};
-  $("#viewTitle").textContent=titles[id]||"語彙Lab";
-  window.scrollTo({top:0,behavior:"smooth"});
-  if(id==="home") renderHome();
-  if(id==="vocab") renderVocab();
-  if(id==="library") renderLibrary();
-  if(id==="flashcards" && !state.weakOnly) buildFlashDeck();
-syncAIEndpointUI();
-  if(id==="progress") renderProgress();
+  currentView=id;
+  $$('.view').forEach(v=>v.classList.toggle('active',v.id===id));
+  $$('.nav-btn[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===id));
+  const titles={home:'Dashboard',reader:'Interactive Reader',vocab:'Vocabulary Bank',review:'Review',studio:'Theme & Focus Studio'};
+  $('#viewTitle').textContent=titles[id]||'GoiScope';
+  if(id==='vocab') renderVocab();
+  if(id==='review') renderReview();
+  if(id==='studio') renderThemes();
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
-function topicLabel(t){
-  const m={"経済":"Ekonomi","社会":"Sosial","教育":"Pendidikan","技術":"Teknologi","環境":"Lingkungan","スポーツ":"Olahraga","エンタメ":"Hiburan"};
-  return m[t]||t;
-}
-function topics(){ return [...new Set(DB.map(x=>x.topic))]; }
-
-function initSelects(){
-  const options = `<option value="ALL">Semua bidang</option>`+topics().map(t=>`<option value="${t}">${t} · ${topicLabel(t)}</option>`).join("");
-  $("#topicFilter").innerHTML=options;
-  $("#flashTopic").innerHTML=options;
-  $("#quizTopic").innerHTML=options;
-  if($("#libraryTopicFilter")) $("#libraryTopicFilter").innerHTML=options;
+function initNav(){
+  $$('.nav-btn[data-view],.go-view').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
+  $('#themeQuickBtn').addEventListener('click',()=>setView('studio'));
+  $('#focusQuickBtn').addEventListener('click',()=>setView('studio'));
 }
 
-function renderHome(){
-  const p=loadProgress();
-  dbGetArticles().then(rows=>{
-    const el=$("#homeStats .article-count-stat b");
-    if(el) el.textContent=rows.length+" artikel";
-  }).catch(()=>{});
-  const studied=Object.keys(p.ratings).length;
-  const mastered=DB.filter(v=>mastery(v)>=2).length;
-  const accuracy=p.quizTotal?Math.round(p.quizCorrect/p.quizTotal*100):0;
-  const bookmarked=(p.bookmarks||[]).length;
-  $("#homeStats").innerHTML=[
-    ["Total bank",DB.length+" kata","N1/N2/Advanced"],
-    ["Pernah direview",studied+" kata","Flashcard"],
-    ["Good / Easy",mastered+" kata","Mastery"],
-    ["Quiz accuracy",accuracy+"%","Dari semua quiz"],
-    ["Bookmark",bookmarked+" kata","Kata sulit pilihanmu"],
-    ["Library","0 artikel","Tersimpan offline","article-count-stat"]
-  ].map(x=>`<div class="stat ${x[3]||""}"><span>${x[0]}</span><b>${x[1]}</b><span>${x[2]}</span></div>`).join("");
-  const review=DB.slice().sort((a,b)=>mastery(a)-mastery(b)).slice(0,5);
-  $("#reviewList").innerHTML=review.map(v=>`<div class="compact-item"><div class="compact-jp"><b>${v.word}</b><span>${v.reading}</span></div><div class="compact-right">${v.meaning}<br>${v.topic} · ${v.level}</div></div>`).join("");
-  $("#categoryBars").innerHTML=topics().map(t=>{
-    const arr=DB.filter(v=>v.topic===t);
-    const pct=Math.round(arr.reduce((s,v)=>s+masteryPct(v),0)/arr.length);
-    return `<div class="bar-row"><div class="bar-label"><span>${t} · ${topicLabel(t)}</span><span>${pct}%</span></div><div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div></div>`;
-  }).join("");
+function applyTheme(id){
+  const t=themes.find(x=>x.id===id)||themes[0];
+  document.documentElement.dataset.theme=t.id;
+  localStorage.setItem(STORAGE.theme,t.id);
+  $('#statTheme').textContent=t.name;
+  const colorMap={sakura:'#f6d7e5',sumi:'#17191c',matcha:'#e5ead5',seigaiha:'#e5f3ff',neon:'#171129',shinbun:'#e6e0d3'};
+  document.querySelector('meta[name="theme-color"]').setAttribute('content',colorMap[t.id]);
+  renderThemes();
+}
+function renderThemes(){
+  const active=localStorage.getItem(STORAGE.theme)||'sakura';
+  $('#themeGrid').innerHTML=themes.map(t=>`<button class="theme-card ${active===t.id?'active':''}" data-theme-id="${t.id}"><div class="theme-swatch" style="background:${t.swatch}"></div><b>${t.name}</b><small>${t.desc}</small></button>`).join('');
+  $$('#themeGrid [data-theme-id]').forEach(b=>b.addEventListener('click',()=>{applyTheme(b.dataset.themeId);toast(`Tema ${themes.find(t=>t.id===b.dataset.themeId).name} aktif`)}));
 }
 
-function loadDemo(){
-  state.currentArticleTitle=DEMO.title;
-  state.currentArticleCategory=DEMO.category;
-  $("#articleTitleInput").value=DEMO.title;
-  $("#articleCategoryInput").value=DEMO.category;
-  if($("#articleSourceInput")) $("#articleSourceInput").value="Demo GoiScope";
-  $("#articleTextInput").value=DEMO.paragraphs.map(p=>p.jp).join("\n\n");
-  renderDemoArticle();
+function initSourceTabs(){
+  $$('.mini-tab').forEach(b=>b.addEventListener('click',()=>{
+    $$('.mini-tab').forEach(x=>x.classList.toggle('active',x===b));
+    $$('.source-pane').forEach(p=>p.classList.toggle('active',p.dataset.sourcePane===b.dataset.sourceTab));
+  }));
+  $('#loadDemoBtn').addEventListener('click',()=>{currentArticle=structuredClone(demoArticle);saveAndRenderArticle();toast('Artikel demo dimuat')});
+  $('#analyzeTextBtn').addEventListener('click',analyzeTextArticle);
+  $('#importUrlBtn').addEventListener('click',importUrlArticle);
 }
 
-function escapeAttr(s=""){
-  return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+function saveAndRenderArticle(){
+  localStorage.setItem(STORAGE.article,JSON.stringify(currentArticle));
+  renderArticle();updateStats();
 }
 
-function renderInteractiveJapanese(text, vocabArr=[]){
-  const items=(vocabArr||[]).filter(v=>v&&v.word).slice().sort((a,b)=>b.word.length-a.word.length);
-  let out="", i=0;
-  while(i<text.length){
-    let hit=null;
-    for(const v of items){
-      if(text.startsWith(v.word,i)){hit=v;break;}
-    }
-    if(hit){
-      out += `<button type="button" class="interactive-word ${isBookmarked(hit.id)?"saved-word":""}" data-word-id="${escapeAttr(hit.id)}">${escapeHtml(hit.word)}</button>`;
-      i += hit.word.length;
-    }else{
-      out += escapeHtml(text[i]);
-      i++;
-    }
-  }
-  return out;
+function renderArticle(){
+  $('#articleBody').style.setProperty('--reader-size',readerFont+'px');
+  document.documentElement.style.setProperty('--reader-size',readerFont+'px');
+  $('#fontSizeLabel').textContent=readerFont+'px';
+  if(!currentArticle){$('#articleEmpty').classList.remove('hidden');$('#articleView').classList.add('hidden');renderContinue();return}
+  $('#articleEmpty').classList.add('hidden');$('#articleView').classList.remove('hidden');
+  $('#articleTitle').textContent=currentArticle.title||'Artikel Jepang';
+  $('#articleCategory').textContent=currentArticle.category||'Artikel';
+  $('#articleBody').innerHTML=(currentArticle.paragraphs||[]).map((p,i)=>{
+    const marked=markHighlights(p.jp,p.highlights||[]);
+    return `<section class="article-paragraph" data-p="${i}"><div class="jp-line" data-p="${i}">${marked}</div>${p.furigana?`<div class="furigana-line">${escapeHTML(p.furigana)}</div>`:''}${p.id?`<div class="translation">${escapeHTML(p.id)}</div>`:''}</section>`;
+  }).join('');
+  applyReaderToggles();bindArticleWordClicks();renderContinue();
 }
 
-function bindInteractiveWords(){
-  $$(".interactive-word").forEach(btn=>{
-    btn.addEventListener("click",()=>openWordModal(btn.dataset.wordId));
-  });
+function markHighlights(text,words){
+  if(!words.length)return escapeHTML(text);
+  const sorted=[...words].sort((a,b)=>b.length-a.length);
+  const escaped=escapeHTML(text);
+  const pattern=sorted.map(w=>escapeRegExp(w)).join('|');
+  return escaped.replace(new RegExp(`(${pattern})`,'g'),m=>`<span class="ai-word" data-word="${escapeHTML(m)}">${escapeHTML(m)}</span>`);
 }
+function escapeRegExp(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}
 
-function refreshInteractiveWordStates(){
-  $$(".interactive-word").forEach(btn=>{
-    btn.classList.toggle("saved-word",isBookmarked(btn.dataset.wordId));
-  });
-}
-
-function openWordModal(id){
-  const v=DB.find(x=>x.id===id);
-  if(!v) return;
-  state.activeWordId=id;
-  $("#wordModalWord").textContent=v.word||"";
-  $("#wordModalReading").textContent=v.reading||"";
-  $("#wordModalMeaning").textContent=v.meaning||"";
-  $("#wordModalLevel").textContent=v.level||"ADV";
-  $("#wordModalTopic").textContent=v.topic||"";
-  $("#wordModalNuance").textContent=v.nuance||"";
-  $("#wordModalExample").textContent=v.example||"";
-  $("#wordModalExampleReading").textContent=v.exampleReading||"";
-  $("#wordModalExampleMeaning").textContent=v.exampleMeaning||"";
-  $("#wordModalSimilar").innerHTML=(v.similar||[]).map(s=>`<span>${escapeHtml(s)}</span>`).join("")||"<span>—</span>";
-  $("#wordModalCollocations").innerHTML=(v.collocations||[]).map(s=>`<span>${escapeHtml(s)}</span>`).join("")||"<span>—</span>";
-  updateWordModalState();
-  $("#wordModal").classList.remove("hidden");
-  document.body.style.overflow="hidden";
-}
-
-function closeWordModal(){
-  $("#wordModal").classList.add("hidden");
-  document.body.style.overflow="";
-  state.activeWordId=null;
-}
-
-function updateWordModalState(){
-  if(!state.activeWordId) return;
-  const saved=isBookmarked(state.activeWordId);
-  $("#wordModalSaved").textContent=saved?"✓ Sudah di Bank Kata":"";
-  $("#addWordBankBtn").textContent=saved?"Hapus dari Bank Kata":"＋ Tambah ke Bank Kata";
-}
-
-function toggleActiveWordBank(){
-  if(!state.activeWordId) return;
-  toggleBookmark(state.activeWordId);
-  updateWordModalState();
-  refreshInteractiveWordStates();
-}
-
-function practiceActiveWord(){
-  if(!state.activeWordId) return;
-  const v=DB.find(x=>x.id===state.activeWordId);
-  if(!v) return;
-  state.flashDeck=[v];
-  state.flashIndex=0;
-  state.weakOnly=true;
-  closeWordModal();
-  setView("flashcards");
-  renderFlash();
-}
-
-function renderDemoArticle(){
-  state.currentArticleData={
-    title:DEMO.title,
-    category:DEMO.category,
-    source:$("#articleSourceInput")?.value.trim() || "Demo GoiScope",
-    paragraphs:DEMO.paragraphs.map(p=>({
-      japanese:p.jp, furigana:p.reading, translation:p.id,
-      vocabulary:p.vocab.map(id=>DB.find(v=>v.id===id)).filter(Boolean)
-    }))
-  };
-  state.currentArticleTitle=DEMO.title;
-  state.currentArticleCategory=DEMO.category;
-  state.articleDeckIds=[...new Set(DEMO.paragraphs.flatMap(p=>p.vocab))];
-  const cards=DEMO.paragraphs.map((p,i)=>{
-    const chips=p.vocab.map(id=>{
-      const v=DB.find(x=>x.id===id);
-      return `<button class="vocab-chip go-vocab" data-id="${v.id}">${v.word}<span>${v.reading}</span></button>`;
-    }).join("");
-    return `<article class="paragraph-card">
-      <div class="jp-line">${renderInteractiveJapanese(p.jp,p.vocab.map(id=>DB.find(x=>x.id===id)).filter(Boolean))}</div>
-      <div class="furi-line">${p.reading}</div>
-      <div class="id-line">${p.id}</div>
-      <div class="vocab-chips">${chips}</div>
-    </article>`;
-  }).join("");
-  $("#articleResult").innerHTML=`<div class="article-doc">
-    <div class="article-header"><div><small>ARTICLE ANALYSIS</small><h2>${DEMO.title}</h2><div class="article-meta">${DEMO.category} · ${DEMO.paragraphs.length} paragraf · ${[...new Set(DEMO.paragraphs.flatMap(p=>p.vocab))].length} target vocab</div></div></div>
-    ${cards}
-  </div>`;
-  $$(".go-vocab").forEach(b=>b.addEventListener("click",()=>{setView("vocab");$("#vocabSearch").value=DB.find(v=>v.id===b.dataset.id).word;renderVocab();}));
-  bindInteractiveWords();
-}
-
-
-function renderAIArticle(data){
-  const article = normalizeAIResponse(data);
-  state.currentArticleTitle = article.title;
-  state.currentArticleCategory = article.category;
-  const articleVocabObjects = [];
-  const cards = article.paragraphs.map((p, i) => {
-    const vocabArr = (p.vocabulary || p.vocab || []).map(item => {
-      if(typeof item === "string"){
-        const found = DB.find(v => v.id===item || v.word===item);
-        if(found){ articleVocabObjects.push(found); return found; }
-        return null;
-      }
-      if(item && item.word){
-        const existing = DB.find(v => v.word === item.word);
-        const obj = existing || {
-          id: "ai_" + (item.word + "_" + i).replace(/[^\w一-龯ぁ-んァ-ン]/g,""),
-          word: item.word,
-          reading: item.reading || "",
-          meaning: item.meaning || "",
-          level: item.level || "ADV",
-          topic: item.topic || article.category || "経済",
-          nuance: item.nuance || "Vocabulary hasil analisis AI.",
-          similar: item.similar || [],
-          collocations: item.collocations || [],
-          example: item.example || p.japanese || p.jp || "",
-          exampleReading: item.exampleReading || p.furigana || p.reading || "",
-          exampleMeaning: item.exampleMeaning || p.translation || p.id || ""
-        };
-        articleVocabObjects.push(obj);
-        return obj;
-      }
-      return null;
-    }).filter(Boolean);
-
-    return `<article class="paragraph-card">
-      <div class="jp-line">${renderInteractiveJapanese(p.japanese || p.jp || "",vocabArr)}</div>
-      <div class="furi-line">${escapeHtml(p.furigana || p.reading || "")}</div>
-      <div class="id-line">${escapeHtml(p.translation || p.id || "")}</div>
-      <div class="vocab-chips">${vocabArr.map(v=>`<button class="vocab-chip go-vocab" data-id="${v.id}">${v.word}<span>${v.reading||""}</span></button>`).join("") || '<span class="article-meta">AI belum mengembalikan vocab untuk paragraf ini.</span>'}</div>
-    </article>`;
-  }).join("");
-
-  // merge AI-only words into DB if not already present
-  articleVocabObjects.forEach(v=>{
-    if(!DB.find(x=>x.id===v.id)) DB.push(v);
-  });
-  state.articleDeckIds = [...new Set(articleVocabObjects.map(v=>v.id))];
-  state.currentArticleData={
-    title:article.title,
-    category:article.category,
-    source:$("#articleSourceInput")?.value.trim() || article.source || "",
-    paragraphs:article.paragraphs.map(p=>({
-      japanese:p.japanese||p.jp||"",
-      furigana:p.furigana||p.reading||"",
-      translation:p.translation||p.id||"",
-      vocabulary:(p.vocabulary||p.vocab||[])
-    }))
-  };
-
-  $("#articleResult").innerHTML=`<div class="article-doc">
-    <div class="article-header"><div><small>AI ARTICLE ANALYSIS</small><h2>${escapeHtml(article.title || "Hasil Analisis AI")}</h2><div class="article-meta">${escapeHtml(article.category || "")} · ${article.paragraphs.length} paragraf · ${state.articleDeckIds.length} target vocab</div></div></div>
-    ${cards}
-  </div>`;
-  $$(".go-vocab").forEach(b=>b.addEventListener("click",()=>{setView("vocab");$("#vocabSearch").value=(DB.find(v=>v.id===b.dataset.id)||{}).word || "";renderVocab();}));
-  bindInteractiveWords();
-  renderVocab();
-  renderHome();
-}
-function normalizeAIResponse(data){
-  return {
-    title: data.title || $("#articleTitleInput").value || "Artikel AI",
-    category: data.category || $("#articleCategoryInput").value || "経済",
-    source: data.source || $("#articleSourceInput")?.value.trim() || "",
-    paragraphs: (data.paragraphs || []).map(p => ({
-      japanese: p.japanese || p.jp || "",
-      furigana: p.furigana || p.reading || "",
-      translation: p.translation || p.id || "",
-      vocabulary: p.vocabulary || p.vocab || []
-    }))
-  };
-}
-
-async function importAndAnalyzeUrl(){
-  const url=$("#articleSourceInput").value.trim();
-  const category=$("#articleCategoryInput").value;
-  const endpoint=getImportUrlEndpoint();
-
-  if(!url){
-    alert("Paste URL artikel dulu di kolom Sumber / URL artikel.");
-    return;
-  }
-  if(!/^https?:\/\//i.test(url)){
-    alert("URL harus diawali http:// atau https://");
-    return;
-  }
-  if(!endpoint){
-    alert("Endpoint AI belum tersimpan.");
-    return;
-  }
-
-  const btn=$("#importUrlAiBtn");
-  const oldLabel=btn.textContent;
-  btn.disabled=true;
-  btn.textContent="Mengambil artikel + menganalisis...";
-
-  try{
-    const res=await fetch(endpoint,{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({url,category})
+function bindArticleWordClicks(){
+  $$('.ai-word').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();const p=el.closest('.article-paragraph');openWordLookup(el.dataset.word,p.querySelector('.jp-line').textContent,'AI HIGHLIGHT')}));
+  $$('.jp-line').forEach(line=>{
+    line.addEventListener('click',e=>{
+      if(e.target.closest('.ai-word'))return;
+      const word=getJapaneseWordAtPoint(line,e.clientX,e.clientY);
+      if(word && /[\u3040-\u30ff\u3400-\u9fff々〆ヵヶ]/.test(word)) openWordLookup(word,line.textContent,'YOUR TAP');
     });
-
-    let data={};
-    try{ data=await res.json(); }catch{}
-
-    if(!res.ok){
-      throw new Error(data.error || `HTTP ${res.status}`);
-    }
-
-    renderAIArticle(data);
-
-    if(data.title) $("#articleTitleInput").value=data.title;
-    if(data.category) $("#articleCategoryInput").value=data.category;
-    $("#articleSourceInput").value=data.source || url;
-
-    const reconstructed=(data.paragraphs||[]).map(p=>p.japanese||p.jp||"").join("\n\n");
-    if(reconstructed) $("#articleTextInput").value=reconstructed;
-
-    addActivity("Mengambil URL artikel dan menganalisis dengan AI");
-    await saveCurrentArticle(false);
-
-    const status=$("#articleSaveStatus");
-    if(status){
-      status.textContent="✓ URL berhasil diambil, dianalisis AI, dan disimpan ke Library.";
-      status.classList.remove("hidden");
-    }
-
-  }catch(err){
-    console.error(err);
-    alert(
-      "Gagal mengambil / menganalisis URL.\n\n" +
-      (err.message || "Unknown error") +
-      "\n\nKalau situs memakai paywall/JavaScript atau memblokir server, paste teks artikelnya lalu gunakan Analisis Teks dengan AI."
-    );
-  }finally{
-    btn.disabled=false;
-    btn.textContent=oldLabel;
-  }
+  });
 }
 
-async function analyzeWithAI(){
-  const endpoint = getAIEndpoint();
-  const title = $("#articleTitleInput").value.trim();
-  const category = $("#articleCategoryInput").value;
-  const text = $("#articleTextInput").value.trim();
-  if(!text){ alert("Masukkan artikel dulu."); return; }
-  if(!endpoint){
-    alert("Isi dulu URL endpoint AI, lalu tekan Simpan Endpoint.");
-    return;
+function getJapaneseWordAtPoint(container,x,y){
+  let node=null,offset=0;
+  if(document.caretPositionFromPoint){const pos=document.caretPositionFromPoint(x,y);node=pos?.offsetNode;offset=pos?.offset||0}
+  else if(document.caretRangeFromPoint){const r=document.caretRangeFromPoint(x,y);node=r?.startContainer;offset=r?.startOffset||0}
+  if(!node)return '';
+  if(node.nodeType!==Node.TEXT_NODE){node=node.firstChild;if(!node)return ''}
+  if(!container.contains(node))return '';
+  const full=container.textContent;
+  let globalOffset=0;const walker=document.createTreeWalker(container,NodeFilter.SHOW_TEXT);let n;
+  while((n=walker.nextNode())){if(n===node){globalOffset+=offset;break}globalOffset+=n.textContent.length}
+  if(Intl.Segmenter){
+    const seg=new Intl.Segmenter('ja',{granularity:'word'});
+    for(const item of seg.segment(full)){if(globalOffset>=item.index && globalOffset<item.index+item.segment.length){const s=item.segment.trim();if(item.isWordLike!==false && s)return s}}
   }
-  const btn = $("#analyzeAiBtn");
-  const oldLabel = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = "Memproses AI...";
+  const chars=/[\u3040-\u30ff\u3400-\u9fff々〆ヵヶ]/;
+  let a=Math.min(globalOffset,full.length-1),b=a;
+  while(a>0&&chars.test(full[a-1]))a--;while(b<full.length&&chars.test(full[b]))b++;
+  return full.slice(a,b).slice(0,12);
+}
+
+function sentenceAround(word,context){
+  const idx=context.indexOf(word); if(idx<0)return context;
+  const left=Math.max(context.lastIndexOf('。',idx-1)+1,0); let right=context.indexOf('。',idx); if(right<0)right=context.length;else right+=1;
+  return context.slice(left,right).trim();
+}
+
+async function openWordLookup(word,context,source){
+  const clean=word.replace(/^[、。！？「」『』（）\s]+|[、。！？「」『』（）\s]+$/g,'');if(!clean)return;
+  currentLookup={word:clean,context:sentenceAround(clean,context),source};
+  lookupCount++;localStorage.setItem(STORAGE.lookups,String(lookupCount));updateStats();
+  $('#lookupWord').textContent=clean;$('#lookupReading').textContent='';$('#lookupSourceBadge').textContent=source;
+  $('#lookupContent').innerHTML='';$('#lookupLoading').classList.remove('hidden');
+  $('#lookupSheet').classList.add('open');$('#lookupSheet').setAttribute('aria-hidden','false');
+  document.body.style.overflow='hidden';
+  const known=localDictionary[clean];
+  if(known){currentLookup={...currentLookup,...known};renderLookup(currentLookup);return}
   try{
-    const res = await fetch(endpoint,{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ title, category, text })
-    });
-    if(!res.ok) throw new Error("HTTP " + res.status);
-    const data = await res.json();
-    renderAIArticle(data);
-    addActivity("Menganalisis artikel dengan AI");
-    await saveCurrentArticle(false);
+    const res=await fetch('/api/lookup-word',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word:clean,sentence:currentLookup.context,articleTitle:currentArticle?.title||''})});
+    if(!res.ok)throw new Error('lookup unavailable');
+    const data=await res.json();currentLookup={...currentLookup,...data};renderLookup(currentLookup);
   }catch(err){
-    console.error(err);
-    alert("Gagal menghubungi endpoint AI. Pastikan URL endpoint benar dan backend mengembalikan JSON yang sesuai.");
-  }finally{
-    btn.disabled = false;
-    btn.textContent = oldLabel;
+    currentLookup={...currentLookup,reading:'',meaning:'Belum ada analisis lokal untuk kata ini.',jlpt:'?',register:'',nuance:'Hubungkan endpoint AI V8 untuk mendapatkan reading, arti kontekstual, nuansa, sinonim, dan collocation secara otomatis.',synonyms:[],collocations:[]};renderLookup(currentLookup,true);
   }
 }
 
-function analyzeCustom(){
-  const text=$("#articleTextInput").value.trim();
-  if(!text){alert("Masukkan artikel dulu.");return;}
-  const pars=text.split(/\n\s*\n/).filter(Boolean);
-  state.currentArticleTitle=$("#articleTitleInput").value||"Artikel Kustom";
-  state.currentArticleCategory=$("#articleCategoryInput").value||"経済";
-  const exactDemo = pars.join("\n\n") === DEMO.paragraphs.map(p=>p.jp).join("\n\n");
-  if(exactDemo){renderDemoArticle();addActivity("Menganalisis artikel demo ekonomi");return;}
-  let customFoundIds=[];
-  const html=pars.map(p=>{
-    const found=DB.filter(v=>p.includes(v.word));
-    customFoundIds.push(...found.map(v=>v.id));
-    return `<article class="paragraph-card">
-      <div class="jp-line">${renderInteractiveJapanese(p,found)}</div>
-      <div class="furi-line">${buildReadingLine(p,found)}</div>
-      <div class="id-line">Terjemahan otomatis penuh belum aktif pada prototype lokal untuk artikel kustom. Versi AI/backend nanti akan mengisi terjemahan Indonesia natural di sini.</div>
-      <div class="vocab-chips">${found.map(v=>`<button class="vocab-chip go-vocab" data-id="${v.id}">${v.word}<span>${v.reading}</span></button>`).join("") || '<span class="article-meta">Belum ada kata yang cocok dengan bank demo.</span>'}</div>
-    </article>`;
-  }).join("");
-  $("#articleResult").innerHTML=`<div class="article-doc"><div class="article-header"><div><small>ARTICLE ANALYSIS</small><h2>${escapeHtml($("#articleTitleInput").value||"Artikel Kustom")}</h2><div class="article-meta">${$("#articleCategoryInput").value} · ${pars.length} paragraf</div></div></div>${html}</div>`;
-  $$(".go-vocab").forEach(b=>b.addEventListener("click",()=>{setView("vocab");$("#vocabSearch").value=DB.find(v=>v.id===b.dataset.id).word;renderVocab();}));
-  bindInteractiveWords();
-  state.articleDeckIds=[...new Set(customFoundIds)];
-  state.currentArticleData={
-    title:state.currentArticleTitle,
-    category:state.currentArticleCategory,
-    source:$("#articleSourceInput")?.value.trim() || "",
-    paragraphs:pars.map(p=>{
-      const found=DB.filter(v=>p.includes(v.word));
-      return {
-        japanese:p,
-        furigana:buildReadingLine(p,found),
-        translation:"Terjemahan AI belum dijalankan untuk paragraf ini.",
-        vocabulary:found
-      };
-    })
-  };
-  addActivity("Menganalisis artikel kustom");
+function renderLookup(d,fallback=false){
+  $('#lookupLoading').classList.add('hidden');$('#lookupReading').textContent=d.reading||'';
+  $('#lookupContent').innerHTML=`
+    <div class="lookup-block"><small>ARTI DALAM KONTEKS</small><p><strong>${escapeHTML(d.meaning||'—')}</strong></p></div>
+    <div class="lookup-block"><small>JLPT / REGISTER</small><div class="lookup-chips"><span>${escapeHTML(d.jlpt||'?')}</span>${d.register?`<span>${escapeHTML(d.register)}</span>`:''}${fallback?'<span>AI offline</span>':''}</div></div>
+    <div class="lookup-block"><small>NUANSA</small><p>${escapeHTML(d.nuance||'—')}</p></div>
+    <div class="lookup-block"><small>KONTEKS ARTIKEL</small><div class="context-box">${escapeHTML(d.context||'')}</div></div>
+    ${d.synonyms?.length?`<div class="lookup-block"><small>SINONIM / KATA MIRIP</small><div class="lookup-chips">${d.synonyms.map(x=>`<span>${escapeHTML(x)}</span>`).join('')}</div></div>`:''}
+    ${d.collocations?.length?`<div class="lookup-block"><small>COLLOCATION</small><div class="lookup-chips">${d.collocations.map(x=>`<span>${escapeHTML(x)}</span>`).join('')}</div></div>`:''}`;
+  const exists=vocabBank.some(v=>v.word===d.word);$('#addVocabBtn').textContent=exists?'✓ Sudah di Vocabulary':'＋ Tambah ke Vocabulary';$('#addVocabBtn').disabled=exists;
 }
 
-function buildReadingLine(text, found){
-  if(!found.length) return "Furigana otomatis lengkap untuk teks kustom akan diisi oleh modul AI/backend.";
-  return "Kata terdeteksi: "+found.map(v=>`${v.word} → ${v.reading}`).join("　｜　");
+function closeLookup(){
+  $('#lookupSheet').classList.remove('open');$('#lookupSheet').setAttribute('aria-hidden','true');document.body.style.overflow='';
 }
-function escapeHtml(s){return s.replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));}
+function initLookup(){
+  $('#closeLookupBtn').addEventListener('click',closeLookup);$('#lookupBackdrop').addEventListener('click',closeLookup);
+  $('#addVocabBtn').addEventListener('click',()=>{if(!currentLookup)return;addCurrentLookupToVocab()});
+  $('#speakWordBtn').addEventListener('click',()=>{if(!currentLookup)return;const u=new SpeechSynthesisUtterance(currentLookup.word);u.lang='ja-JP';u.rate=.82;speechSynthesis.cancel();speechSynthesis.speak(u)});
+  $('.tap-demo').addEventListener('click',()=>openWordLookup('踏まえる','結果を踏まえて、今後の方針を決めます。','DEMO TAP'));
+}
+function addCurrentLookupToVocab(){
+  if(vocabBank.some(v=>v.word===currentLookup.word))return;
+  vocabBank.unshift({id:crypto.randomUUID?.()||Date.now().toString(),word:currentLookup.word,reading:currentLookup.reading||'',meaning:currentLookup.meaning||'',jlpt:currentLookup.jlpt||'?',register:currentLookup.register||'',nuance:currentLookup.nuance||'',synonyms:currentLookup.synonyms||[],collocations:currentLookup.collocations||[],context:currentLookup.context||'',sourceArticle:currentArticle?.title||'',addedAt:new Date().toISOString(),rating:0});
+  localStorage.setItem(STORAGE.vocab,JSON.stringify(vocabBank));renderLookup(currentLookup);updateStats();toast('Ditambahkan ke Vocabulary Bank ✓');
+}
+
+async function analyzeTextArticle(){
+  const text=$('#articleTextInput').value.trim();if(!text){toast('Tempel teks Jepang dulu');return}
+  const title=$('#articleTitleInput').value.trim()||'Artikel Jepang';
+  const btn=$('#analyzeTextBtn');btn.disabled=true;btn.textContent='Menganalisis...';
+  try{
+    const res=await fetch('/api/analyze-text',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,text})});
+    if(!res.ok)throw new Error('AI unavailable');currentArticle=await res.json();saveAndRenderArticle();setView('reader');toast('Analisis artikel selesai');
+  }catch(e){
+    currentArticle={title,category:'Custom',paragraphs:text.split(/\n\s*\n/).filter(Boolean).map(p=>({jp:p,furigana:'',id:'',highlights:[]}))};saveAndRenderArticle();toast('Teks dimuat. AI backend belum tersambung.');
+  }finally{btn.disabled=false;btn.textContent='Analisis dengan AI'}
+}
+
+async function importUrlArticle(){
+  const url=$('#articleUrlInput').value.trim();if(!url){toast('Masukkan URL artikel');return}
+  const btn=$('#importUrlBtn');btn.disabled=true;btn.textContent='Mengambil artikel...';
+  try{
+    const res=await fetch('/api/import-url',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
+    if(!res.ok)throw new Error(await res.text());currentArticle=await res.json();saveAndRenderArticle();toast('Artikel berhasil diimpor');
+  }catch(e){toast('URL gagal diambil. Coba Tempel teks.')}finally{btn.disabled=false;btn.textContent='Ambil & Analisis Artikel'}
+}
+
+function applyReaderToggles(){
+  const b=$('#articleBody');b.classList.toggle('hide-furigana',!$('#furiganaToggle').checked);b.classList.toggle('hide-translation',!$('#translationToggle').checked);b.classList.toggle('no-highlight',!$('#aiHighlightToggle').checked)
+}
+function initReaderControls(){
+  ['furiganaToggle','translationToggle','aiHighlightToggle'].forEach(id=>$('#'+id).addEventListener('change',applyReaderToggles));
+  $('#fontMinus').addEventListener('click',()=>setReaderFont(readerFont-1));$('#fontPlus').addEventListener('click',()=>setReaderFont(readerFont+1));
+  $('#saveArticleBtn').addEventListener('click',()=>toast('Artikel sudah tersimpan lokal ✓'));
+}
+function setReaderFont(n){readerFont=Math.max(16,Math.min(30,n));localStorage.setItem(STORAGE.font,String(readerFont));document.documentElement.style.setProperty('--reader-size',readerFont+'px');$('#fontSizeLabel').textContent=readerFont+'px'}
 
 function renderVocab(){
-  const q=$("#vocabSearch").value.trim().toLowerCase();
-  const topic=$("#topicFilter").value;
-  const level=$("#levelFilter").value;
-  const list=DB.filter(v=>(topic==="ALL"||v.topic===topic)&&(level==="ALL"||v.level===level)&&(!state.bookmarkOnly||isBookmarked(v.id))&&(!q||[v.word,v.reading,v.meaning,v.nuance,v.topic].join(" ").toLowerCase().includes(q)));
-  $("#vocabGrid").innerHTML=list.map(v=>`<article class="vocab-card">
-    <div class="vocab-head">
-      <div><div class="vocab-word">${v.word}</div><div class="vocab-reading">${v.reading}</div></div>
-      <div>
-        <div class="tag-row"><span>${v.level}</span><span>${v.topic}</span></div>
-        <button class="bookmark-btn ${isBookmarked(v.id)?"active":""}" data-bookmark="${v.id}" title="Bookmark kata">${isBookmarked(v.id)?"★":"☆"}</button>
-      </div>
-    </div>
-    <div class="vocab-meaning">${v.meaning}</div>
-    <div class="vocab-note">${v.nuance}</div>
-    <div class="vocab-detail"><div class="kicker">CONTOH</div><div>${v.example}</div><div class="vocab-reading">${v.exampleReading}</div><div class="vocab-note">${v.exampleMeaning}</div></div>
-    <div class="vocab-detail"><div class="kicker">KATA MIRIP</div><div class="similar">${v.similar.map(s=>`<span>${s}</span>`).join("")}</div></div>
-    <div class="vocab-detail"><div class="kicker">COLLOCATION</div><div class="similar">${v.collocations.map(s=>`<span>${s}</span>`).join("")}</div></div>
-  </article>`).join("") || `<div class="panel">Tidak ada kata yang cocok.</div>`;
+  const q=($('#vocabSearch')?.value||'').trim().toLowerCase();const items=vocabBank.filter(v=>`${v.word} ${v.reading} ${v.meaning}`.toLowerCase().includes(q));
+  if(!items.length){$('#vocabGrid').innerHTML='<div class="panel empty-state"><h3>Vocabulary Bank masih kosong</h3><p>Tap kata di Reader lalu tekan “Tambah ke Vocabulary”.</p></div>';return}
+  $('#vocabGrid').innerHTML=items.map(v=>`<article class="vocab-card"><div class="word">${escapeHTML(v.word)}</div><div class="kana">${escapeHTML(v.reading)}</div><div class="gloss">${escapeHTML(v.meaning)}</div><div class="tag-row" style="justify-content:flex-start"><span>${escapeHTML(v.jlpt||'?')}</span>${v.register?`<span>${escapeHTML(v.register)}</span>`:''}</div><div class="context">${escapeHTML(v.context||'')}</div><div class="actions"><button class="text-btn speak-vocab" data-id="${v.id}">🔊 Dengar</button><button class="danger-text delete-vocab" data-id="${v.id}">Hapus</button></div></article>`).join('');
+  $$('.delete-vocab').forEach(b=>b.addEventListener('click',()=>{vocabBank=vocabBank.filter(v=>v.id!==b.dataset.id);saveVocab();renderVocab()}));
+  $$('.speak-vocab').forEach(b=>b.addEventListener('click',()=>{const v=vocabBank.find(x=>x.id===b.dataset.id);if(v){const u=new SpeechSynthesisUtterance(v.word);u.lang='ja-JP';u.rate=.82;speechSynthesis.speak(u)}}));
+}
+function saveVocab(){localStorage.setItem(STORAGE.vocab,JSON.stringify(vocabBank));updateStats()}
+
+function renderReview(){
+  $('#reviewCounter').textContent=vocabBank.length?`${Math.min(reviewIndex+1,vocabBank.length)} / ${vocabBank.length}`:'0 / 0';
+  if(!vocabBank.length){$('#reviewArea').innerHTML='<div class="empty-state"><h3>Belum ada kartu</h3><p>Tambahkan vocab dari Reader dulu.</p></div>';return}
+  if(reviewIndex>=vocabBank.length)reviewIndex=0;const v=vocabBank[reviewIndex];
+  $('#reviewArea').innerHTML=`<div class="review-card" id="reviewCard"><small>KANJI → ARTI</small><div class="q">${escapeHTML(v.word)}</div><button id="revealReview" class="secondary" style="margin-top:20px">Lihat Jawaban</button><div class="answer"><div class="reading">${escapeHTML(v.reading)}</div><h3>${escapeHTML(v.meaning)}</h3><div class="context-box">${escapeHTML(v.context||'')}</div><div class="rating-row"><button class="rate" data-r="1">Again</button><button class="rate" data-r="2">Hard</button><button class="rate" data-r="3">Good</button><button class="rate" data-r="4">Easy</button></div></div></div>`;
+  $('#revealReview').addEventListener('click',()=>$('#reviewCard').classList.add('revealed'));
+  $$('.rate').forEach(b=>b.addEventListener('click',()=>{v.rating=Number(b.dataset.r);saveVocab();reviewIndex=(reviewIndex+1)%vocabBank.length;renderReview()}));
 }
 
-
-function openArticleDeck(){
-  if(!state.articleDeckIds.length){
-    alert("Belum ada vocabulary dari artikel aktif. Muat artikel demo atau analisis artikel terlebih dahulu.");
-    return;
-  }
-  state.flashDeck=state.articleDeckIds.map(id=>DB.find(v=>v.id===id)).filter(Boolean);
-  state.flashIndex=0;
-  state.weakOnly=false;
-  setView("flashcards");
-  renderFlash();
-  addActivity(`Membuka flashcard artikel (${state.flashDeck.length} kata)`);
+function renderContinue(){
+  if(!currentArticle){$('#continueCard').innerHTML='<strong>Belum ada artikel</strong><br><small>Buka Reader dan muat artikel demo.</small>';return}
+  $('#continueCard').innerHTML=`<strong>${escapeHTML(currentArticle.title)}</strong><br><small>${currentArticle.paragraphs?.length||0} paragraf • tap untuk lanjut membaca</small>`;$('#continueCard').onclick=()=>setView('reader');
 }
-function openWeakDeck(){
-  const p=loadProgress();
-  const weak=DB.filter(v=>["again","hard"].includes(p.ratings?.[v.id]));
-  state.flashDeck=weak.length?weak:DB.filter(v=>!p.ratings?.[v.id]);
-  if(!state.flashDeck.length) state.flashDeck=DB.slice();
-  state.flashIndex=0;
-  state.weakOnly=true;
-  setView("flashcards");
-  renderFlash();
-  addActivity(`Membuka review kata lemah (${state.flashDeck.length} kata)`);
+function updateStats(){
+  $('#statVocab').textContent=vocabBank.length;$('#statLookup').textContent=lookupCount;$('#statAudio').textContent=(soundTimer||localAudio&&!localAudio.paused)?'ON':'OFF';
+  const id=localStorage.getItem(STORAGE.theme)||'sakura';$('#statTheme').textContent=(themes.find(t=>t.id===id)||themes[0]).name;renderContinue();
 }
 
-
-async function renderLibrary(){
-  const grid=$("#libraryGrid");
-  if(!grid) return;
-  const rows=await dbGetArticles().catch(()=>[]);
-  const q=($("#librarySearch")?.value||"").trim().toLowerCase();
-  const topic=$("#libraryTopicFilter")?.value||"ALL";
-  const filtered=rows.filter(a=>{
-    const hay=[a.title,a.source,a.category].join(" ").toLowerCase();
-    return (topic==="ALL"||a.category===topic) && (!q||hay.includes(q));
-  });
-  const totalWords=rows.reduce((s,a)=>s+articleWordCount(a),0);
-  $("#librarySummary").innerHTML=`
-    <span class="summary-pill">${rows.length} artikel tersimpan</span>
-    <span class="summary-pill">${totalWords} target vocab</span>
-    <span class="summary-pill">Offline via IndexedDB</span>
-  `;
-  grid.innerHTML=filtered.map(a=>{
-    const date=a.savedAt?new Date(a.savedAt).toLocaleDateString("id-ID"):"";
-    const pc=(a.paragraphs||[]).length;
-    const vc=articleWordCount(a);
-    return `<article class="library-card">
-      <div>
-        <h4>${escapeHtml(a.title||"Tanpa judul")}</h4>
-        <div class="source">${escapeHtml(a.source||"Sumber tidak dicatat")}</div>
-      </div>
-      <div class="library-meta">
-        <span>${escapeHtml(a.category||"Lainnya")}</span>
-        <span>${pc} paragraf</span>
-        <span>${vc} vocab</span>
-        <span>${date}</span>
-      </div>
-      <div class="library-actions-row">
-        <button class="secondary open-saved-article" data-id="${a.id}">Buka</button>
-        <button class="ghost danger delete-saved-article" data-id="${a.id}">Hapus</button>
-      </div>
-    </article>`;
-  }).join("") || `<div class="panel">Belum ada artikel yang cocok. Simpan artikel dari halaman Artikel.</div>`;
-  $$(".open-saved-article").forEach(b=>b.addEventListener("click",()=>openSavedArticle(b.dataset.id)));
-  $$(".delete-saved-article").forEach(b=>b.addEventListener("click",()=>deleteSavedArticle(b.dataset.id)));
-}
-async function openSavedArticle(id){
-  const a=await dbGetArticle(id);
-  if(!a) return;
-  state.currentArticleData=a;
-  state.currentArticleTitle=a.title||"Artikel";
-  state.currentArticleCategory=a.category||"";
-  $("#articleTitleInput").value=a.title||"";
-  $("#articleCategoryInput").value=a.category||"経済";
-  $("#articleSourceInput").value=a.source||"";
-  $("#articleTextInput").value=(a.paragraphs||[]).map(p=>p.japanese||p.jp||"").join("\n\n");
-  const allVocab=[];
-  const cards=(a.paragraphs||[]).map(p=>{
-    const arr=(p.vocabulary||p.vocab||[]).map(v=>{
-      if(typeof v==="string") return DB.find(x=>x.id===v||x.word===v);
-      if(v&&v.word){
-        let existing=DB.find(x=>x.word===v.word);
-        if(!existing){
-          existing={
-            id:v.id||("saved_"+v.word.replace(/[^\w一-龯ぁ-んァ-ン]/g,"")),
-            word:v.word,reading:v.reading||"",meaning:v.meaning||"",
-            level:v.level||"ADV",topic:v.topic||a.category||"経済",
-            nuance:v.nuance||"",similar:v.similar||[],collocations:v.collocations||[],
-            example:v.example||p.japanese||"",exampleReading:v.exampleReading||p.furigana||"",
-            exampleMeaning:v.exampleMeaning||p.translation||""
-          };
-          DB.push(existing);
-        }
-        return existing;
-      }
-      return null;
-    }).filter(Boolean);
-    allVocab.push(...arr);
-    return `<article class="paragraph-card">
-      <div class="jp-line">${renderInteractiveJapanese(p.japanese||p.jp||"",arr)}</div>
-      <div class="furi-line">${escapeHtml(p.furigana||p.reading||"")}</div>
-      <div class="id-line">${escapeHtml(p.translation||p.id||"")}</div>
-      <div class="vocab-chips">${arr.map(v=>`<button class="vocab-chip go-vocab" data-id="${v.id}">${v.word}<span>${v.reading||""}</span></button>`).join("")}</div>
-    </article>`;
-  }).join("");
-  state.articleDeckIds=[...new Set(allVocab.map(v=>v.id))];
-  $("#articleResult").innerHTML=`<div class="article-doc">
-    <div class="article-header"><div><small>SAVED ARTICLE</small><h2>${escapeHtml(a.title||"Artikel")}</h2><div class="article-meta">${escapeHtml(a.category||"")} · ${a.paragraphs?.length||0} paragraf · ${state.articleDeckIds.length} target vocab</div></div></div>
-    ${cards}
-  </div>`;
-  const status=$("#articleSaveStatus"); status.textContent="✓ Dibuka dari Library."; status.classList.remove("hidden");
-  $$(".go-vocab").forEach(b=>b.addEventListener("click",()=>{setView("vocab");$("#vocabSearch").value=(DB.find(v=>v.id===b.dataset.id)||{}).word||"";renderVocab();}));
-  bindInteractiveWords();
-  setView("article");
-}
-async function deleteSavedArticle(id){
-  if(!confirm("Hapus artikel ini dari Library?")) return;
-  await dbDeleteArticle(id);
-  addActivity("Menghapus artikel dari Library");
-  renderLibrary();
-}
-async function clearLibrary(){
-  if(!confirm("Hapus SEMUA artikel yang tersimpan di perangkat ini?")) return;
-  await dbClearArticles();
-  addActivity("Menghapus seluruh Article Library");
-  renderLibrary();
-}
-async function exportBackup(){
-  const articles=await dbGetArticles();
-  const payload={
-    app:"GoiScope",
-    version:5,
-    exportedAt:new Date().toISOString(),
-    articles,
-    progress:loadProgress(),
-    aiEndpoint:getAIEndpoint()
-  };
-  const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  a.href=url;
-  a.download=`goiscope-backup-${new Date().toISOString().slice(0,10)}.json`;
-  document.body.appendChild(a);a.click();a.remove();
-  URL.revokeObjectURL(url);
-}
-async function importBackup(file){
-  if(!file) return;
-  try{
-    const data=JSON.parse(await file.text());
-    const articles=data.articles||[];
-    for(const a of articles) await dbPutArticle(a);
-    if(data.progress) saveProgress(data.progress);
-    if(data.aiEndpoint) setAIEndpoint(data.aiEndpoint);
-    syncAIEndpointUI();
-    addActivity(`Import backup: ${articles.length} artikel`);
-    alert(`Backup berhasil diimport: ${articles.length} artikel.`);
-    renderLibrary();renderHome();renderProgress();
-  }catch(e){
-    console.error(e);
-    alert("File backup tidak valid.");
-  }
+function ensureAudio(){if(!audioCtx){audioCtx=new (window.AudioContext||window.webkitAudioContext)();masterGain=audioCtx.createGain();masterGain.gain.value=Number($('#audioVolume').value)/100;masterGain.connect(audioCtx.destination)}if(audioCtx.state==='suspended')audioCtx.resume()}
+function stopSynth(){if(soundTimer){clearInterval(soundTimer);soundTimer=null}activeNodes.forEach(n=>{try{n.stop()}catch{}});activeNodes=[];$$('.sound-card').forEach(b=>b.classList.toggle('active',b.dataset.sound===selectedSound));updateAudioStatus()}
+function playSynth(){stopAllAudio(false);ensureAudio();let step=0;const notes={lofi:[261.63,329.63,392,493.88],rain:[174.61,220,261.63,329.63],train:[130.81,196,146.83,220],forest:[293.66,392,329.63,440]}[selectedSound];const interval={lofi:650,rain:900,train:520,forest:1050}[selectedSound];
+  const tick=()=>{if(!audioCtx)return;const osc=audioCtx.createOscillator(),g=audioCtx.createGain();osc.type=selectedSound==='lofi'?'sine':'triangle';osc.frequency.value=notes[step%notes.length];g.gain.setValueAtTime(0.0001,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(selectedSound==='rain'?0.018:0.035,audioCtx.currentTime+.03);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+.5);osc.connect(g);g.connect(masterGain);osc.start();osc.stop(audioCtx.currentTime+.55);activeNodes.push(osc);step++};tick();soundTimer=setInterval(tick,interval);updateAudioStatus()}
+function stopAllAudio(resetLocal=true){stopSynth();if(localAudio&&resetLocal){localAudio.pause();localAudio.currentTime=0}updateAudioStatus()}
+function updateAudioStatus(){const on=!!soundTimer||!!(localAudio&&!localAudio.paused);$('#audioStatus').textContent=on?'ON':'OFF';$('#audioToggleBtn').textContent=on?'⏸ Pause Focus':'▶ Play Focus';updateStats()}
+function initAudio(){
+  $$('.sound-card').forEach(b=>b.addEventListener('click',()=>{selectedSound=b.dataset.sound;$$('.sound-card').forEach(x=>x.classList.toggle('active',x===b));toast(`${b.querySelector('b').textContent} dipilih`)}));
+  $$('.sound-card')[0]?.classList.add('active');
+  $('#audioToggleBtn').addEventListener('click',()=>{if(soundTimer){stopSynth()}else if(localAudio&&!localAudio.paused){localAudio.pause();updateAudioStatus()}else playSynth()});
+  $('#audioStopBtn').addEventListener('click',()=>stopAllAudio(true));
+  $('#audioVolume').addEventListener('input',e=>{if(masterGain)masterGain.gain.value=Number(e.target.value)/100;if(localAudio)localAudio.volume=Number(e.target.value)/100});
+  $('#localAudioInput').addEventListener('change',e=>{const file=e.target.files?.[0];if(!file)return;stopAllAudio(true);if(localAudio&&localAudio._url)URL.revokeObjectURL(localAudio._url);const url=URL.createObjectURL(file);localAudio=new Audio(url);localAudio._url=url;localAudio.loop=true;localAudio.volume=Number($('#audioVolume').value)/100;localAudio.play().then(()=>{toast(`Memutar ${file.name}`);updateAudioStatus()}).catch(()=>toast('Tap Play Focus untuk mulai audio'));localAudio.onpause=updateAudioStatus;localAudio.onplay=updateAudioStatus});
 }
 
-function buildFlashDeck(){
-  state.weakOnly=false;
-  const topic=$("#flashTopic").value;
-  state.flashDeck=DB.filter(v=>topic==="ALL"||v.topic===topic).sort((a,b)=>mastery(a)-mastery(b));
-  if(!state.flashDeck.length) state.flashDeck=DB.slice();
-  state.flashIndex=0;
-  renderFlash();
+function initInstall(){
+  window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;$('#installBtn').classList.remove('hidden')});
+  $('#installBtn').addEventListener('click',async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$('#installBtn').classList.add('hidden')});
+  if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));
 }
 
-function nextFlash(){
-  if(!state.flashDeck.length) return;
-  state.flashIndex = (state.flashIndex + 1) % state.flashDeck.length;
-  renderFlash();
+function init(){
+  applyTheme(localStorage.getItem(STORAGE.theme)||'sakura');initNav();initSourceTabs();initLookup();initReaderControls();initAudio();initInstall();
+  $('#vocabSearch').addEventListener('input',renderVocab);setReaderFont(readerFont);renderArticle();renderVocab();renderReview();updateStats();
 }
-function prevFlash(){
-  if(!state.flashDeck.length) return;
-  state.flashIndex = (state.flashIndex - 1 + state.flashDeck.length) % state.flashDeck.length;
-  renderFlash();
-}
-
-function renderFlash(){
-  const v=state.flashDeck[state.flashIndex];
-  if(!v)return;
-  $("#flashCard").classList.remove("flipped");
-  $("#flashCounter").textContent=`${state.flashIndex+1} / ${state.flashDeck.length}`;
-  $("#flashTopicBadge").textContent=`${v.topic} · ${v.level}` + (state.weakOnly ? " · Weak Review" : (state.articleDeckIds.includes(v.id) ? " · Article Deck" : ""));
-  const mode=$("#flashMode").value;
-  let label="",prompt="",sub="",answer=v.word,reading=v.reading,meaning=v.meaning;
-  if(mode==="kanji-meaning"){label="KANJI → ARTI";prompt=v.word;sub="";answer=v.word;}
-  if(mode==="meaning-kanji"){label="ARTI → KANJI";prompt=v.meaning;sub="";answer=v.word;}
-  if(mode==="kanji-reading"){label="KANJI → FURIGANA";prompt=v.word;sub="Coba baca sebelum membalik";answer=v.reading;reading="";meaning=v.meaning;}
-  if(mode==="reading-kanji"){label="FURIGANA → KANJI";prompt=v.reading;sub="Tebak kanjinya";answer=v.word;reading=v.reading;meaning=v.meaning;}
-  $("#flashPromptLabel").textContent=label;
-  $("#flashPrompt").textContent=prompt;
-  $("#flashPromptSub").textContent=sub;
-  $("#flashAnswer").textContent=answer;
-  $("#flashReading").textContent=reading;
-  $("#flashMeaning").textContent=meaning;
-  $("#flashExample").innerHTML=`${v.example}<br><span style="color:var(--accent)">${v.exampleReading}</span><br>${v.exampleMeaning}`;
-}
-function rateCard(rating){
-  const v=state.flashDeck[state.flashIndex];
-  const p=loadProgress(); p.ratings[v.id]=rating; saveProgress(p);
-  addActivity(`Flashcard ${v.word} (${v.reading}) → ${rating}`);
-  state.flashIndex=(state.flashIndex+1)%state.flashDeck.length;
-  renderFlash();
-}
-
-function shuffle(arr){return arr.map(v=>[Math.random(),v]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);}
-function startQuiz(){
-  const topic=$("#quizTopic").value;
-  let pool=DB.filter(v=>topic==="ALL"||v.topic===topic);
-  const count=Math.min(+$("#quizCount").value,pool.length);
-  state.quiz=shuffle(pool).slice(0,count).map((v,i)=>makeQuestion(v,i));
-  state.quizIndex=0;state.quizScore=0;state.quizAnswered=false;
-  $("#quizSetup").classList.add("hidden");$("#quizBox").classList.remove("hidden");
-  renderQuestion();
-}
-function makeQuestion(v,i){
-  const types=["meaning","kanji","context"];
-  const type=types[i%types.length];
-  let prompt="",reading="",correct="";
-  if(type==="meaning"){prompt=v.word;reading=v.reading;correct=v.meaning;}
-  if(type==="kanji"){prompt=v.meaning;reading="";correct=v.word;}
-  if(type==="context"){prompt=v.example.replace(v.word,"＿＿＿");reading=v.exampleReading.replace(v.reading,"＿＿＿");correct=v.word;}
-  let wrongPool=DB.filter(x=>x.id!==v.id).map(x=>type==="meaning"?x.meaning:x.word);
-  const options=shuffle([correct,...shuffle(wrongPool).slice(0,3)]);
-  return {v,type,prompt,reading,correct,options};
-}
-function renderQuestion(){
-  const q=state.quiz[state.quizIndex]; if(!q){finishQuiz();return;}
-  state.quizAnswered=false;
-  $("#nextQuizBtn").classList.add("hidden");
-  $("#quizFeedback").innerHTML="";
-  $("#quizProgress").textContent=`Soal ${state.quizIndex+1} / ${state.quiz.length}`;
-  $("#quizScore").textContent=`Benar ${state.quizScore}`;
-  const typeLabel={meaning:"KANJI → ARTI",kanji:"ARTI → KANJI",context:"KONTEKS"}[q.type];
-  $("#quizQuestion").innerHTML=`<div class="q-type">${typeLabel} · ${q.v.topic}</div><div class="q-main">${q.prompt}</div>${q.reading?`<div class="q-reading">${q.reading}</div>`:""}${q.type==="context"?`<div class="q-context">${q.v.exampleMeaning}</div>`:""}`;
-  $("#quizOptions").innerHTML=q.options.map((o,i)=>`<button class="quiz-option" data-opt="${encodeURIComponent(o)}">${String.fromCharCode(65+i)}. ${o}</button>`).join("");
-  $$(".quiz-option").forEach(b=>b.addEventListener("click",()=>answerQuiz(decodeURIComponent(b.dataset.opt),b)));
-}
-function answerQuiz(ans,btn){
-  if(state.quizAnswered)return;
-  state.quizAnswered=true;
-  const q=state.quiz[state.quizIndex];
-  const correct=ans===q.correct;
-  if(correct){state.quizScore++;btn.classList.add("correct");}else{btn.classList.add("wrong");$$(".quiz-option").forEach(b=>{if(decodeURIComponent(b.dataset.opt)===q.correct)b.classList.add("correct");});}
-  const p=loadProgress();p.quizTotal++;if(correct)p.quizCorrect++;saveProgress(p);
-  $("#quizFeedback").innerHTML=`<b>${correct?"Benar ✓":"Belum tepat"}</b><br>${q.v.word}<br><span style="color:var(--accent)">${q.v.reading}</span><br>${q.v.meaning}<br><span style="color:var(--muted)">${q.v.nuance}</span>`;
-  $("#quizScore").textContent=`Benar ${state.quizScore}`;
-  $("#nextQuizBtn").classList.remove("hidden");
-  addActivity(`Quiz ${q.v.word} (${q.v.reading}) → ${correct?"benar":"salah"}`);
-}
-function finishQuiz(){
-  $("#quizQuestion").innerHTML=`<div class="q-type">SELESAI</div><div class="q-main">${state.quizScore} / ${state.quiz.length}</div><div class="q-context">Kamu bisa mengulang bidang yang sama atau pindah ke flashcard untuk mereview kata yang masih lemah.</div>`;
-  $("#quizOptions").innerHTML="";
-  $("#quizFeedback").innerHTML="";
-  $("#nextQuizBtn").classList.add("hidden");
-  setTimeout(()=>{$("#quizSetup").classList.remove("hidden");},500);
-}
-function renderProgress(){
-  const p=loadProgress(), reviewed=Object.keys(p.ratings).length, mastered=DB.filter(v=>mastery(v)>=2).length, acc=p.quizTotal?Math.round(p.quizCorrect/p.quizTotal*100):0, bookmarked=(p.bookmarks||[]).length;
-  $("#progressStats").innerHTML=[
-    ["Vocabulary bank",DB.length+"","Total demo"],
-    ["Reviewed",reviewed+"","Pernah diberi rating"],
-    ["Mastered",mastered+"","Good / Easy"],
-    ["Quiz accuracy",acc+"%",`${p.quizCorrect}/${p.quizTotal}`],
-    ["Bookmark",bookmarked+"","Kata sulit tersimpan"]
-  ].map(x=>`<div class="stat"><span>${x[0]}</span><b>${x[1]}</b><span>${x[2]}</span></div>`).join("");
-  $("#masteryBars").innerHTML=topics().map(t=>{
-    const arr=DB.filter(v=>v.topic===t);
-    const pct=Math.round(arr.reduce((s,v)=>s+masteryPct(v),0)/arr.length);
-    return `<div class="bar-row"><div class="bar-label"><span>${t} · ${topicLabel(t)}</span><span>${pct}%</span></div><div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div></div>`;
-  }).join("");
-  $("#activityList").innerHTML=(p.activity.length?p.activity:[{text:"Belum ada aktivitas.",time:"Mulai dari flashcard atau quiz."}]).map(a=>`<div class="compact-item"><div>${a.text}</div><div class="compact-right">${a.time}</div></div>`).join("");
-}
-
-$$(".nav-btn,.go-view").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));
-$("#loadDemoBtn").addEventListener("click",loadDemo);
-$("#saveArticleBtn").addEventListener("click",()=>saveCurrentArticle(true));
-$("#saveAiConfigBtn").addEventListener("click",saveAIConfig);
-$("#importUrlAiBtn").addEventListener("click",importAndAnalyzeUrl);
-$("#analyzeAiBtn").addEventListener("click",analyzeWithAI);
-$("#articleDeckBtn").addEventListener("click",openArticleDeck);
-$("#weakReviewBtn").addEventListener("click",openWeakDeck);
-$("#analyzeBtn").addEventListener("click",analyzeCustom);
-$("#vocabSearch").addEventListener("input",renderVocab);
-$("#topicFilter").addEventListener("change",renderVocab);
-$("#levelFilter").addEventListener("change",renderVocab);
-if($("#librarySearch")) $("#librarySearch").addEventListener("input",renderLibrary);
-if($("#libraryTopicFilter")) $("#libraryTopicFilter").addEventListener("change",renderLibrary);
-if($("#exportBackupBtn")) $("#exportBackupBtn").addEventListener("click",exportBackup);
-if($("#importBackupInput")) $("#importBackupInput").addEventListener("change",e=>importBackup(e.target.files?.[0]));
-if($("#clearLibraryBtn")) $("#clearLibraryBtn").addEventListener("click",clearLibrary);
-$("#bookmarkFilterBtn").addEventListener("click",()=>{state.bookmarkOnly=!state.bookmarkOnly;$("#bookmarkFilterBtn").classList.toggle("active",state.bookmarkOnly);renderVocab();});
-$("#flashTopic").addEventListener("change",buildFlashDeck);
-$("#flashMode").addEventListener("change",renderFlash);
-$("#shuffleFlashBtn").addEventListener("click",()=>{state.flashDeck=shuffle(state.flashDeck);state.flashIndex=0;renderFlash();});
-$("#flashCard").addEventListener("click",()=>$("#flashCard").classList.toggle("flipped"));
-$("#flipFlashBtn").addEventListener("click",()=>$("#flashCard").classList.toggle("flipped"));
-$("#prevFlashBtn").addEventListener("click",prevFlash);
-$("#nextFlashBtn").addEventListener("click",nextFlash);
-$$(".rate").forEach(b=>b.addEventListener("click",()=>rateCard(b.dataset.rating)));
-$("#startQuizBtn").addEventListener("click",startQuiz);
-$("#nextQuizBtn").addEventListener("click",()=>{state.quizIndex++;renderQuestion();});
-$("#resetBtn").addEventListener("click",()=>{if(confirm("Hapus semua progress demo di perangkat ini?")){localStorage.removeItem("goiLabProgress");renderHome();renderProgress();buildFlashDeck();syncAIEndpointUI();}});
-let deferredPrompt=null;
-window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;$("#installBtn").classList.remove("hidden");});
-$("#installBtn").addEventListener("click",async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$("#installBtn").classList.add("hidden");});
-
-$("#closeWordModalBtn").addEventListener("click",closeWordModal);
-$("#wordModalBackdrop").addEventListener("click",closeWordModal);
-$("#addWordBankBtn").addEventListener("click",toggleActiveWordBank);
-$("#practiceWordBtn").addEventListener("click",practiceActiveWord);
-document.addEventListener("keydown",e=>{
-  if(e.key==="Escape" && !$("#wordModal").classList.contains("hidden")) closeWordModal();
-});
-
-if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js?v=7").catch(()=>{}));}
-
-initSelects();
-loadDemo();
-renderHome();
-renderVocab();
-renderLibrary();
-buildFlashDeck();
+init();

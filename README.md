@@ -1,83 +1,27 @@
-# 語彙Lab N1/N2
+# GoiScope V8 — Interactive Reader Studio
 
-PWA prototype untuk belajar kosakata Jepang tingkat lanjut dari artikel.
+Fokus V8:
+1. Theme Studio: Sakura, Sumi Night, Matcha, Seigaiha, Tokyo Neon, Shinbun.
+2. Focus Sound: synth/ambience offline + file audio lokal.
+3. Tap-any-Japanese-word: kata yang tidak di-highlight AI tetap bisa ditap.
+4. Context lookup: reading, arti Indonesia, JLPT/register, nuansa, sinonim, collocation.
+5. Add to Vocabulary Bank dari bottom sheet satu tap.
+6. Reader controls: furigana, terjemahan, AI highlight, ukuran font.
+7. PWA mobile dengan bottom navigation.
 
-## Fitur utama
-- Artikel Jepang per paragraf
-- Furigana pada baris terpisah
-- Terjemahan Indonesia
-- Vocabulary N1 / N2 / Advanced
-- Sinonim, nuansa, collocation, contoh kalimat
-- Flashcard 4 arah
-- Rating Again / Hard / Good / Easy
-- Quiz per bidang
-- Deck khusus artikel
-- Bookmark kata sulit
-- Review kata lemah
-- Progress tersimpan di browser
-- Bisa di-install sebagai PWA
+## Deploy
+Upload isi folder ini ke root repository/Vercel.
 
-## Deploy ke GitHub Pages
-1. Buat repository GitHub baru.
-2. Upload seluruh isi folder ini ke root repository.
-3. Buka **Settings → Pages**.
-4. Pada **Build and deployment**, pilih **Deploy from a branch**.
-5. Pilih branch `main` dan folder `/ (root)`.
-6. Klik **Save**.
-7. Tunggu sampai URL GitHub Pages muncul.
+Environment variables untuk fitur AI:
+- `OPENAI_API_KEY` = API key server-side (JANGAN taruh di app.js / GitHub publik)
+- `OPENAI_MODEL` = opsional; default `gpt-5.6-luna`
 
-## Catatan
-Prototype ini masih frontend lokal. Terjemahan/furigana otomatis untuk artikel kustom penuh akan membutuhkan modul AI/backend di versi berikutnya.
+Tanpa backend/API key:
+- Demo article tetap jalan.
+- Theme Studio tetap jalan.
+- Focus Sound tetap jalan.
+- Tap-any-word tetap mendeteksi kata; beberapa kata demo punya kamus lokal.
+- Kata di luar kamus lokal akan meminta endpoint AI.
 
-
-## Tambahan di versi ini
-- Tampilan dibuat lebih terang dengan nuansa sakura.
-- Flashcard sekarang punya tombol **Prev / Flip / Next**.
-- Ditambahkan **AI Connector** di halaman artikel.
-- Dua ikon PWA diletakkan langsung di root repository supaya mudah upload dari HP/laptop.
-
-
-## V2.1 Cache Fix
-Membersihkan cache service worker lama dan menambahkan cache-busting agar tampilan Sakura terbaru langsung terambil setelah deploy.
-
-
-# V5 Unified
-
-Fitur baru:
-- Article Library berbasis IndexedDB.
-- Artikel bisa disimpan dan dibuka berulang kali secara offline.
-- AI result otomatis disimpan ke Library.
-- Search dan filter Library per kategori.
-- Export/Import backup JSON.
-- Source/URL artikel disimpan.
-- AI Connector tetap tersedia untuk backend Vercel.
-- Flashcard Article Deck tetap melekat pada artikel.
-
-Catatan:
-- IndexedDB tersimpan per browser/perangkat. Untuk sinkronisasi HP ↔ laptop diperlukan cloud database (mis. Supabase) pada tahap koneksi cloud.
-- Jangan hapus data situs/browser jika belum membuat backup.
-
-
-# V6 — One-click URL Import
-
-Cara pakai:
-1. Paste URL artikel di kolom **Sumber / URL artikel**.
-2. Klik **⚡ Ambil & Analisis URL**.
-3. Backend Vercel mengambil isi artikel, mengirimkannya ke AI, lalu hasil langsung tampil.
-4. Hasil otomatis disimpan ke Library.
-
-Jika situs memblokir pengambilan otomatis / memakai JavaScript / paywall:
-paste teks artikel secara manual dan gunakan **Analisis Teks dengan AI**.
-
-
-# V7 — Interactive Article Vocabulary
-
-- Kata target N1/N2/ADV di paragraf artikel bisa diketuk.
-- Detail kata muncul sebagai bottom sheet/popup.
-- Furigana, arti, nuance, contoh, kata mirip, dan collocation ditampilkan.
-- Tombol `Tambah ke Bank Kata` memakai bank/bookmark lokal yang sudah ada.
-- Tombol `Flashcard Kata Ini` langsung membuat deck satu kata.
-- Kata yang sudah masuk Bank Kata diberi highlight berbeda.
-- Tetap installable sebagai PWA Android.
-
-Update: timpa frontend GitHub Pages dengan isi ZIP ini, commit, tunggu Pages selesai.
+## Catatan Android
+Tap kata biasa menggunakan `Intl.Segmenter('ja')` bila tersedia dan fallback ke karakter Jepang di sekitar titik tap. Bottom sheet dirancang untuk layar HP.

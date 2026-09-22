@@ -1,14 +1,14 @@
 <!doctype html>
-<html lang="id">
+<html lang="id" data-theme="sakura">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#f8eef5" />
-  <meta name="description" content="Prototype PWA untuk membaca artikel Jepang dan menghafal kosakata JLPT N1/N2." />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#f6d7e5" />
+  <meta name="description" content="GoiScope V8 — interactive Japanese article reader, vocabulary bank, themes and focus audio for JLPT N1/N2." />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="icon" href="icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=7" />
-  <title>GoiScope N1/N2 — Interactive PWA</title>
+  <link rel="icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="styles.css" />
+  <title>GoiScope V8</title>
 </head>
 <body>
   <div class="app-shell">
@@ -16,366 +16,215 @@
       <div class="brand">
         <div class="brand-mark">語</div>
         <div>
-          <strong>GoiScope</strong>
-          <span>N1 / N2 Sakura Study App</span>
+          <strong>GoiScope <span class="vbadge">V8</span></strong>
+          <span>N1/N2 Interactive Reader</span>
         </div>
       </div>
 
-      <nav class="nav">
+      <nav class="nav" aria-label="Navigasi utama">
         <button class="nav-btn active" data-view="home"><span>⌂</span> Home</button>
-        <button class="nav-btn" data-view="article"><span>文</span> Artikel</button>
+        <button class="nav-btn" data-view="reader"><span>文</span> Reader</button>
         <button class="nav-btn" data-view="vocab"><span>語</span> Vocabulary</button>
-        <button class="nav-btn" data-view="library"><span>本</span> Library</button>
-        <button class="nav-btn" data-view="flashcards"><span>↺</span> Flashcard</button>
-        <button class="nav-btn" data-view="quiz"><span>✓</span> Quiz</button>
-        <button class="nav-btn" data-view="progress"><span>▥</span> Progress</button>
+        <button class="nav-btn" data-view="review"><span>↺</span> Review</button>
+        <button class="nav-btn" data-view="studio"><span>✦</span> Studio</button>
       </nav>
 
       <div class="side-note">
-        <strong>Prinsip aplikasi</strong>
-        <span>Kanji → furigana di baris bawah → arti Indonesia → konteks.</span>
+        <strong>V8 Focus</strong>
+        <span>Tap kata Jepang apa pun → analisis konteks → simpan ke bank.</span>
       </div>
     </aside>
 
     <main class="main">
       <header class="topbar">
         <div>
-          <small>JLPT ADVANCED VOCABULARY • Sakura Mode</small>
+          <small>GOISCOPE • JLPT N1/N2</small>
           <h1 id="viewTitle">Dashboard</h1>
         </div>
         <div class="top-actions">
-          <button id="installBtn" class="ghost hidden">Install App</button>
-          <button id="resetBtn" class="ghost danger">Reset Demo</button>
+          <button id="focusQuickBtn" class="ghost" title="Buka Focus Audio">♫</button>
+          <button id="themeQuickBtn" class="ghost" title="Ganti tema">◐</button>
+          <button id="installBtn" class="ghost hidden">Install</button>
         </div>
       </header>
 
       <section id="home" class="view active">
-        <div class="hero">
+        <div class="hero panel-glow">
           <div>
-            <span class="eyebrow">N1/N2 Vocabulary Intelligence</span>
-            <h2>Ubah satu artikel Jepang menjadi bahan hafalan.</h2>
-            <p>Mulai dari konteks, bukan daftar kata. Baca paragraf → pahami terjemahan → temukan goi sulit → hafalkan lewat flashcard & quiz.</p>
+            <span class="eyebrow">V8 • INTERACTIVE READER STUDIO</span>
+            <h2>Baca artikel Jepang. Tap kata yang bikin kamu berhenti.</h2>
+            <p>AI boleh melewatkan sebuah kata. Kamu tetap bisa tap kata itu sendiri, lihat pembahasan kontekstual, lalu simpan langsung ke Vocabulary Bank.</p>
             <div class="hero-actions">
-              <button class="primary go-view" data-view="article">Buka Artikel Demo</button>
-              <button class="secondary go-view" data-view="flashcards">Mulai Flashcard</button>
-<button class="secondary" id="weakReviewBtn">Review Kata Lemah</button>
+              <button class="primary go-view" data-view="reader">Buka Reader</button>
+              <button class="secondary go-view" data-view="studio">Theme & Music</button>
             </div>
           </div>
           <div class="hero-card">
-            <div class="big-kanji">顕著</div>
-            <div class="reading">けんちょ</div>
-            <div class="meaning">mencolok / nyata / signifikan</div>
-            <div class="tag-row"><span>N1</span><span>社会</span><span>新聞語彙</span></div>
+            <span class="mini-label">TRY TAP</span>
+            <div class="big-kanji tap-demo" data-demo-word="踏まえる">踏まえる</div>
+            <div class="reading">ふまえる</div>
+            <div class="meaning">mempertimbangkan / berlandaskan</div>
+            <div class="tag-row"><span>N1</span><span>新聞語彙</span><span>文脈</span></div>
           </div>
         </div>
 
-        <div class="stats-grid" id="homeStats"></div>
+        <div class="stats-grid">
+          <article class="stat-card"><small>WORD BANK</small><b id="statVocab">0</b><span>kata tersimpan</span></article>
+          <article class="stat-card"><small>DIFFICULT TAPS</small><b id="statLookup">0</b><span>kata pernah dianalisis</span></article>
+          <article class="stat-card"><small>THEME</small><b id="statTheme">Sakura</b><span>tampilan aktif</span></article>
+          <article class="stat-card"><small>FOCUS</small><b id="statAudio">OFF</b><span>audio belajar</span></article>
+        </div>
 
         <div class="two-col">
           <div class="panel">
-            <div class="panel-head">
-              <div><small>今日の復習</small><h3>Review hari ini</h3></div>
-              <button class="text-btn go-view" data-view="flashcards">Buka →</button>
-            </div>
-            <div id="reviewList" class="compact-list"></div>
+            <div class="panel-head"><div><small>CONTINUE</small><h3>Artikel terakhir</h3></div><button class="text-btn go-view" data-view="reader">Buka →</button></div>
+            <div id="continueCard" class="continue-card"></div>
           </div>
-
           <div class="panel">
-            <div class="panel-head">
-              <div><small>分野別</small><h3>Progress per bidang</h3></div>
-            </div>
-            <div id="categoryBars"></div>
+            <div class="panel-head"><div><small>V8 WORKFLOW</small><h3>Alur sekali tap</h3></div></div>
+            <ol class="flow-list">
+              <li>Baca artikel Jepang secara normal.</li>
+              <li>Tap kata sulit—termasuk yang tidak ditandai AI.</li>
+              <li>Lihat arti, reading, nuansa, sinonim, collocation.</li>
+              <li>Tambah ke Vocabulary Bank jika memang penting.</li>
+            </ol>
           </div>
         </div>
       </section>
 
-      <section id="article" class="view">
-        <div class="panel article-import">
+      <section id="reader" class="view">
+        <div class="panel reader-import">
           <div class="panel-head wrap">
-            <div>
-              <small>ARTICLE IMPORT</small>
-              <h3>Masukkan artikel Jepang</h3>
-            </div>
-            <div class="pill">PWA + AI Ready</div>
+            <div><small>ARTICLE SOURCE</small><h3>Artikel Jepang</h3></div>
+            <div class="pill">Tap-any-word V8</div>
           </div>
-          <div class="form-grid form-grid-3">
-            <label>Judul
-              <input id="articleTitleInput" value="物価上昇と消費行動の変化" />
-            </label>
-            <label>Sumber / URL artikel
-              <input id="articleSourceInput" placeholder="Paste URL Today Easy Japanese, NHK, Nikkei, dll." />
-            </label>
-            <label>Bidang
-              <select id="articleCategoryInput">
-                <option value="経済">Ekonomi</option>
-                <option value="社会">Sosial</option>
-                <option value="教育">Pendidikan</option>
-                <option value="技術">Teknologi</option>
-                <option value="環境">Lingkungan</option>
-                <option value="スポーツ">Olahraga</option>
-                <option value="エンタメ">Hiburan</option>
-              </select>
-            </label>
-          </div>
-          <label>Artikel Jepang
-            <textarea id="articleTextInput" rows="8"></textarea>
-          </label>
-          <div class="helper">
-            <strong>Catatan prototype:</strong> artikel demo punya terjemahan + furigana lengkap. Artikel kustom tetap bisa dipecah per paragraf dan dideteksi kosakata yang ada di bank demo. Di versi ini aku tambahkan <b>konektor AI</b>, jadi nanti PWA bisa mengirim artikel ke backend AI untuk membuat furigana, terjemahan Indonesia, vocabulary, dan deck flashcard otomatis.
+          <div class="reader-tabs">
+            <button class="mini-tab active" data-source-tab="demo">Demo</button>
+            <button class="mini-tab" data-source-tab="text">Tempel teks</button>
+            <button class="mini-tab" data-source-tab="url">URL</button>
           </div>
 
-          <div class="ai-box">
-            <div class="panel-head wrap">
-              <div>
-                <small>AI CONNECTOR</small>
-                <h3>Analisis dengan AI</h3>
-              </div>
-              <div class="pill" id="aiStatusPill">Belum terhubung</div>
-            </div>
-            <div class="form-grid ai-grid">
-              <label>URL Endpoint AI
-                <input id="aiEndpointInput" placeholder="https://.../analyze" />
-              </label>
-              <label style="justify-content:end">
-                <button id="saveAiConfigBtn" class="secondary top-gap">Simpan Endpoint</button>
-              </label>
-            </div>
-            <div class="helper">
-              <b>Mode tercepat:</b> paste URL di kolom Sumber/URL lalu tekan <b>⚡ Ambil & Analisis URL</b>. Kalau situs tidak bisa diambil otomatis, kamu masih bisa paste teks artikelnya dan gunakan Analisis Teks dengan AI.<br><br>              Endpoint menerima <b>POST JSON</b> berisi <code>{ title, category, text }</code> dan mengembalikan JSON analisis artikel. Kalau endpoint belum diisi, tombol AI belum bisa memproses artikel kustom.
-            </div>
+          <div class="source-pane active" data-source-pane="demo">
+            <p class="helper">Muat artikel demo untuk mencoba highlight AI + tap kata biasa yang tidak di-highlight.</p>
+            <button id="loadDemoBtn" class="primary">Muat Artikel Demo</button>
           </div>
-          <div class="button-row">
-            <button id="loadDemoBtn" class="secondary">Muat Artikel Demo</button>
-            <button id="analyzeBtn" class="primary">Analisis Artikel</button>
-            <button id="importUrlAiBtn" class="primary url-import-btn">⚡ Ambil & Analisis URL</button>
-            <button id="analyzeAiBtn" class="primary accent2">Analisis Teks dengan AI</button>
-<button id="articleDeckBtn" class="secondary">Flashcard Artikel Ini</button>
-            <button id="saveArticleBtn" class="secondary">♡ Simpan ke Library</button>
+
+          <div class="source-pane" data-source-pane="text">
+            <label>Judul<input id="articleTitleInput" placeholder="Judul artikel" /></label>
+            <label>Teks Jepang<textarea id="articleTextInput" rows="7" placeholder="Tempel artikel Jepang di sini..."></textarea></label>
+            <button id="analyzeTextBtn" class="primary">Analisis dengan AI</button>
+          </div>
+
+          <div class="source-pane" data-source-pane="url">
+            <label>URL artikel<input id="articleUrlInput" type="url" placeholder="https://..." /></label>
+            <button id="importUrlBtn" class="primary">Ambil & Analisis Artikel</button>
+            <p class="helper">Untuk situs yang memblokir pengambilan otomatis, gunakan tab “Tempel teks”.</p>
           </div>
         </div>
 
-        <div id="articleSaveStatus" class="save-status hidden"></div>
-        <div class="interactive-hint">Tip: kata target N1/N2/ADV di artikel bisa diketuk untuk membuka detail dan disimpan ke Bank Kata.</div>
-        <div id="articleResult"></div>
+        <div class="reader-toolbar panel">
+          <div class="toolbar-group">
+            <label class="toggle"><input id="furiganaToggle" type="checkbox" checked /><span></span> Furigana</label>
+            <label class="toggle"><input id="translationToggle" type="checkbox" checked /><span></span> Terjemahan</label>
+            <label class="toggle"><input id="aiHighlightToggle" type="checkbox" checked /><span></span> Highlight AI</label>
+          </div>
+          <div class="toolbar-group font-tools">
+            <button id="fontMinus" class="ghost">A−</button><span id="fontSizeLabel">20px</span><button id="fontPlus" class="ghost">A+</button>
+          </div>
+        </div>
+
+        <div id="articleEmpty" class="panel empty-state">
+          <div class="empty-icon">文</div>
+          <h3>Belum ada artikel aktif</h3>
+          <p>Muat demo, tempel teks Jepang, atau masukkan URL.</p>
+        </div>
+
+        <article id="articleView" class="article-card hidden">
+          <header class="article-head">
+            <div><span id="articleCategory" class="pill">社会</span><h2 id="articleTitle"></h2></div>
+            <button id="saveArticleBtn" class="ghost">☆ Simpan</button>
+          </header>
+          <div class="reader-tip">💡 <strong>V8:</strong> kata berwarna = ditemukan AI. Tapi kamu juga bisa <strong>tap kata Jepang biasa apa pun</strong> untuk menganalisisnya.</div>
+          <div id="articleBody" class="article-body"></div>
+        </article>
       </section>
 
       <section id="vocab" class="view">
-        <div class="toolbar">
-          <div>
-            <small>VOCABULARY BANK</small>
-            <h3>Bank Kosakata</h3>
-          </div>
-          <div class="filters">
-            <input id="vocabSearch" placeholder="Cari kanji, furigana, arti..." />
-            <select id="topicFilter">
-              <option value="ALL">Semua bidang</option>
-            </select>
-            <button id="bookmarkFilterBtn" class="secondary">語 Bank Kata Saya</button>
-<select id="levelFilter">
-              <option value="ALL">N1 + N2 + Advanced</option>
-              <option value="N1">N1</option>
-              <option value="N2">N2</option>
-              <option value="ADV">Advanced</option>
-            </select>
-          </div>
+        <div class="toolbar panel">
+          <div><small>VOCABULARY BANK</small><h3>Kata pilihanmu sendiri</h3></div>
+          <input id="vocabSearch" placeholder="Cari kanji / reading / arti..." />
         </div>
         <div id="vocabGrid" class="vocab-grid"></div>
       </section>
 
-
-      <section id="library" class="view">
-        <div class="toolbar">
-          <div>
-            <small>MY ARTICLE LIBRARY</small>
-            <h3>Perpustakaan Artikel</h3>
-            <p class="muted-copy">Artikel yang disimpan tetap tersedia di perangkat ini, termasuk furigana, terjemahan, dan vocabulary hasil analisis.</p>
-          </div>
-          <div class="filters">
-            <input id="librarySearch" placeholder="Cari judul, sumber, kategori..." />
-            <select id="libraryTopicFilter">
-              <option value="ALL">Semua bidang</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="library-actions">
-          <button id="exportBackupBtn" class="secondary">Export Backup</button>
-          <label class="secondary file-button">Import Backup
-            <input id="importBackupInput" type="file" accept=".json,application/json" hidden />
-          </label>
-          <button id="clearLibraryBtn" class="ghost danger">Hapus Semua Library</button>
-        </div>
-
-        <div class="library-summary" id="librarySummary"></div>
-        <div id="libraryGrid" class="library-grid"></div>
-      </section>
-
-      <section id="flashcards" class="view">
-        <div class="study-layout">
-          <div class="panel study-settings">
-            <small>FLASHCARD MODE</small>
-            <h3>Hafalan bolak-balik</h3>
-            <label>Bidang
-              <select id="flashTopic"></select>
-            </label>
-            <label>Arah kartu
-              <select id="flashMode">
-                <option value="kanji-meaning">Kanji → Arti + Furigana</option>
-                <option value="meaning-kanji">Arti Indonesia → Kanji + Furigana</option>
-                <option value="kanji-reading">Kanji → Furigana</option>
-                <option value="reading-kanji">Furigana → Kanji + Arti</option>
-              </select>
-            </label>
-            <button id="shuffleFlashBtn" class="secondary full">Acak kartu</button>
-            <div class="mini-help">
-              Gunakan <b>Again / Hard / Good / Easy</b>. Nilai tersimpan di perangkat dan memengaruhi daftar review.
-            </div>
-          </div>
-
-          <div class="flash-area">
-            <div class="flash-meta">
-              <span id="flashCounter">1 / 1</span>
-              <span id="flashTopicBadge"></span>
-            </div>
-            <button id="flashCard" class="flashcard" aria-label="Balik kartu">
-              <div class="flash-inner">
-                <div class="flash-face flash-front">
-                  <small id="flashPromptLabel"></small>
-                  <div id="flashPrompt" class="flash-main"></div>
-                  <div id="flashPromptSub" class="flash-sub"></div>
-                  <span class="tap-hint">Tap untuk lihat jawaban</span>
-                </div>
-                <div class="flash-face flash-back">
-                  <small>JAWABAN</small>
-                  <div id="flashAnswer" class="flash-main"></div>
-                  <div id="flashReading" class="flash-reading"></div>
-                  <div id="flashMeaning" class="flash-meaning"></div>
-                  <div id="flashExample" class="flash-example"></div>
-                </div>
-              </div>
-            </button>
-
-            
-            <div class="flash-nav">
-              <button id="prevFlashBtn" class="secondary nav-mini" aria-label="Kartu sebelumnya">← Prev</button>
-              <button id="flipFlashBtn" class="ghost nav-mini" aria-label="Balik kartu">Flip</button>
-              <button id="nextFlashBtn" class="secondary nav-mini" aria-label="Kartu berikutnya">Next →</button>
-            </div>
-
-            <div class="rating-row">
-
-              <button data-rating="again" class="rate again">Again</button>
-              <button data-rating="hard" class="rate hard">Hard</button>
-              <button data-rating="good" class="rate good">Good</button>
-              <button data-rating="easy" class="rate easy">Easy</button>
-            </div>
-          </div>
+      <section id="review" class="view">
+        <div class="panel">
+          <div class="panel-head"><div><small>REVIEW</small><h3>Review dari Vocabulary Bank</h3></div><span id="reviewCounter" class="pill">0 / 0</span></div>
+          <div id="reviewArea" class="review-area"></div>
         </div>
       </section>
 
-      <section id="quiz" class="view">
-        <div class="panel quiz-setup" id="quizSetup">
-          <small>THEMATIC QUIZ</small>
-          <h3>Kuis berdasarkan bidang</h3>
-          <p>Pilih tema. Soal akan mengambil kosakata dari bidang tersebut dan mencampur arti, kanji, dan konteks.</p>
-          <div class="form-grid">
-            <label>Bidang
-              <select id="quizTopic"></select>
-            </label>
-            <label>Jumlah soal
-              <select id="quizCount">
-                <option value="5">5 soal</option>
-                <option value="10" selected>10 soal</option>
-                <option value="15">15 soal</option>
-              </select>
-            </label>
-          </div>
-          <button id="startQuizBtn" class="primary">Mulai Quiz</button>
-        </div>
-
-        <div id="quizBox" class="panel hidden">
-          <div class="quiz-top">
-            <span id="quizProgress"></span>
-            <span id="quizScore"></span>
-          </div>
-          <div id="quizQuestion"></div>
-          <div id="quizOptions" class="quiz-options"></div>
-          <div id="quizFeedback" class="quiz-feedback"></div>
-          <button id="nextQuizBtn" class="primary hidden">Soal berikutnya</button>
-        </div>
-      </section>
-
-      <section id="progress" class="view">
-        <div class="stats-grid" id="progressStats"></div>
-        <div class="two-col">
+      <section id="studio" class="view">
+        <div class="studio-grid">
           <div class="panel">
-            <div class="panel-head"><div><small>MASTERY</small><h3>Kekuatan vocabulary</h3></div></div>
-            <div id="masteryBars"></div>
+            <div class="panel-head"><div><small>THEME STUDIO</small><h3>Ganti suasana aplikasi</h3></div><span class="pill">Visual only</span></div>
+            <p class="helper">Tema tidak mengubah data belajar. Pilihanmu disimpan di perangkat.</p>
+            <div id="themeGrid" class="theme-grid"></div>
           </div>
+
           <div class="panel">
-            <div class="panel-head"><div><small>RECENT</small><h3>Aktivitas terakhir</h3></div></div>
-            <div id="activityList" class="compact-list"></div>
+            <div class="panel-head"><div><small>FOCUS SOUND</small><h3>Musik & ambience</h3></div><span id="audioStatus" class="pill">OFF</span></div>
+            <div class="audio-presets" id="audioPresets">
+              <button data-sound="lofi" class="sound-card"><span>🎹</span><b>Lo-fi Focus</b><small>synth lembut</small></button>
+              <button data-sound="rain" class="sound-card"><span>🌧</span><b>Tokyo Rain</b><small>rain ambience</small></button>
+              <button data-sound="train" class="sound-card"><span>🚃</span><b>Train Night</b><small>hum ritmis</small></button>
+              <button data-sound="forest" class="sound-card"><span>🌲</span><b>Forest</b><small>nature ambience</small></button>
+            </div>
+            <div class="audio-controls">
+              <button id="audioToggleBtn" class="primary">▶ Play Focus</button>
+              <button id="audioStopBtn" class="ghost">■ Stop</button>
+              <label>Volume <input id="audioVolume" type="range" min="0" max="100" value="25" /></label>
+            </div>
+            <div class="local-mp3">
+              <label>Musik sendiri (MP3/audio)<input id="localAudioInput" type="file" accept="audio/*" /></label>
+              <small>File diputar lokal di perangkat dan tidak di-upload ke server.</small>
+            </div>
           </div>
         </div>
       </section>
     </main>
 
-
-    <div id="wordModal" class="word-modal hidden" role="dialog" aria-modal="true">
-      <div id="wordModalBackdrop" class="word-modal-backdrop"></div>
-      <div class="word-sheet">
-        <div class="word-sheet-handle"></div>
-        <button id="closeWordModalBtn" class="word-close" aria-label="Tutup">×</button>
-
-        <div class="word-level-row">
-          <span id="wordModalLevel" class="pill"></span>
-          <span id="wordModalTopic" class="pill"></span>
-          <span id="wordModalSaved" class="saved-indicator"></span>
-        </div>
-
-        <div id="wordModalWord" class="word-sheet-kanji"></div>
-        <div id="wordModalReading" class="word-sheet-reading"></div>
-        <div id="wordModalMeaning" class="word-sheet-meaning"></div>
-
-        <div class="word-sheet-section">
-          <div class="kicker">NUANSA / KONTEKS</div>
-          <div id="wordModalNuance" class="word-sheet-text"></div>
-        </div>
-
-        <div class="word-sheet-section">
-          <div class="kicker">CONTOH</div>
-          <div id="wordModalExample" class="word-sheet-example"></div>
-          <div id="wordModalExampleReading" class="word-sheet-example-reading"></div>
-          <div id="wordModalExampleMeaning" class="word-sheet-text"></div>
-        </div>
-
-        <div class="word-sheet-section">
-          <div class="kicker">KATA MIRIP</div>
-          <div id="wordModalSimilar" class="similar"></div>
-        </div>
-
-        <div class="word-sheet-section">
-          <div class="kicker">COLLOCATION</div>
-          <div id="wordModalCollocations" class="similar"></div>
-        </div>
-
-        <div class="word-sheet-actions">
-          <button id="addWordBankBtn" class="primary">＋ Tambah ke Bank Kata</button>
-          <button id="practiceWordBtn" class="secondary">Flashcard Kata Ini</button>
-        </div>
-      </div>
-    </div>
-
-    <nav class="mobile-nav">
+    <nav class="mobile-nav" aria-label="Navigasi mobile">
       <button class="nav-btn active" data-view="home">⌂<span>Home</span></button>
-      <button class="nav-btn" data-view="article">文<span>Artikel</span></button>
+      <button class="nav-btn" data-view="reader">文<span>Reader</span></button>
       <button class="nav-btn" data-view="vocab">語<span>Vocab</span></button>
-      <button class="nav-btn" data-view="library">本<span>Library</span></button>
-      <button class="nav-btn" data-view="flashcards">↺<span>Kartu</span></button>
-      <button class="nav-btn" data-view="quiz">✓<span>Quiz</span></button>
+      <button class="nav-btn" data-view="review">↺<span>Review</span></button>
+      <button class="nav-btn" data-view="studio">✦<span>Studio</span></button>
     </nav>
   </div>
 
-  <script src="app.js?v=7"></script>
+  <div id="lookupSheet" class="lookup-sheet" aria-hidden="true">
+    <button id="lookupBackdrop" class="lookup-backdrop" aria-label="Tutup"></button>
+    <section class="lookup-panel" role="dialog" aria-modal="true" aria-labelledby="lookupWord">
+      <div class="grabber"></div>
+      <div class="lookup-head">
+        <div>
+          <span id="lookupSourceBadge" class="pill">TAP WORD</span>
+          <h2 id="lookupWord">—</h2>
+          <div id="lookupReading" class="lookup-reading"></div>
+        </div>
+        <button id="closeLookupBtn" class="icon-btn" aria-label="Tutup">×</button>
+      </div>
+      <div id="lookupLoading" class="lookup-loading hidden"><span class="spinner"></span> Menganalisis kata dalam konteks...</div>
+      <div id="lookupContent" class="lookup-content"></div>
+      <div class="lookup-actions">
+        <button id="speakWordBtn" class="ghost">🔊 Dengar</button>
+        <button id="addVocabBtn" class="primary">＋ Tambah ke Vocabulary</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script src="app.js"></script>
 </body>
 </html>

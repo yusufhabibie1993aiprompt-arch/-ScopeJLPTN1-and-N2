@@ -1,27 +1,20 @@
-# GoiScope V8 — Interactive Reader Studio
+# GoiScope V8.1 — Reader + Practice PWA
 
-Fokus V8:
-1. Theme Studio: Sakura, Sumi Night, Matcha, Seigaiha, Tokyo Neon, Shinbun.
-2. Focus Sound: synth/ambience offline + file audio lokal.
-3. Tap-any-Japanese-word: kata yang tidak di-highlight AI tetap bisa ditap.
-4. Context lookup: reading, arti Indonesia, JLPT/register, nuansa, sinonim, collocation.
-5. Add to Vocabulary Bank dari bottom sheet satu tap.
-6. Reader controls: furigana, terjemahan, AI highlight, ukuran font.
-7. PWA mobile dengan bottom navigation.
+V8.1 mempertahankan fitur V8 dan mengembalikan Practice Lab.
 
-## Deploy
-Upload isi folder ini ke root repository/Vercel.
+## Fitur utama
+- Interactive Reader: tap kata Jepang apa pun.
+- Vocabulary Bank: kata yang disimpan dari Reader otomatis menjadi bahan latihan.
+- Practice Lab: Flashcard 4 arah, Quiz, Matching, Typing, Weak List, Progress.
+- Theme Studio: Sakura, Sumi Night, Matcha, Seigaiha, Tokyo Neon, Shinbun.
+- Focus Sound: synth/ambience offline + audio lokal.
+- PWA: manifest + service worker + icon 192/512.
 
-Environment variables untuk fitur AI:
-- `OPENAI_API_KEY` = API key server-side (JANGAN taruh di app.js / GitHub publik)
-- `OPENAI_MODEL` = opsional; default `gpt-5.6-luna`
+## Upgrade dari V8
+V8.1 tetap menggunakan key localStorage V8 untuk Theme, Vocabulary Bank, Article, dan Reader Font, sehingga data V8 yang sudah tersimpan tidak sengaja diputus. Data Practice memakai storage baru `goiscope_v8_1_practice`.
 
-Tanpa backend/API key:
-- Demo article tetap jalan.
-- Theme Studio tetap jalan.
-- Focus Sound tetap jalan.
-- Tap-any-word tetap mendeteksi kata; beberapa kata demo punya kamus lokal.
-- Kata di luar kamus lokal akan meminta endpoint AI.
+## Deploy ke GitHub Pages
+Upload seluruh isi ZIP ke ROOT repository (bukan ke subfolder), lalu commit. Setelah GitHub Pages selesai deploy, lakukan hard refresh. Karena cache service worker dinaikkan ke `goiscope-v8-1-practice-pwa-1`, cache V8 lama akan dibersihkan saat service worker baru aktif.
 
-## Catatan Android
-Tap kata biasa menggunakan `Intl.Segmenter('ja')` bila tersedia dan fallback ke karakter Jepang di sekitar titik tap. Bottom sheet dirancang untuk layar HP.
+## Backend AI
+Pada tahap V8.1 ini endpoint AI sengaja BELUM diubah, sesuai roadmap. Frontend masih memakai endpoint yang sama seperti V8 (`/api/analyze-text`, `/api/import-url`, `/api/lookup-word`). Setelah UI/PWA Practice stabil, backend akan dibenahi menjadi satu URL permanen.

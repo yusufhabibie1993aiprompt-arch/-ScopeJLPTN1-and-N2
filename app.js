@@ -3,7 +3,8 @@ const STORAGE = {
   vocab: 'goiscope_v8_vocab',
   lookups: 'goiscope_v8_lookups',
   article: 'goiscope_v8_article',
-  font: 'goiscope_v8_font'
+  font: 'goiscope_v8_font',
+  practice: 'goiscope_v8_1_practice'
 };
 
 const themes = [
@@ -69,6 +70,17 @@ let selectedSound = 'lofi';
 let audioCtx = null, masterGain = null, soundTimer = null, localAudio = null, activeNodes = [];
 let deferredPrompt = null;
 
+const defaultPracticeState = {
+  weak:{}, attempts:0, correct:0, bestQuiz:0, activities:[], flashIndex:0, typingIndex:0
+};
+let practiceState = (()=>{try{return {...defaultPracticeState,...JSON.parse(localStorage.getItem(STORAGE.practice)||'{}')}}catch{return {...defaultPracticeState}}})();
+let practiceMode='flashcard';
+let flashOrder=[];
+let flashRevealed=false;
+let quizSession=null;
+let matchSession=null;
+let typingOrder=[];
+
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 
@@ -79,10 +91,10 @@ function setView(id){
   currentView=id;
   $$('.view').forEach(v=>v.classList.toggle('active',v.id===id));
   $$('.nav-btn[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===id));
-  const titles={home:'Dashboard',reader:'Interactive Reader',vocab:'Vocabulary Bank',review:'Review',studio:'Theme & Focus Studio'};
+  const titles={home:'Dashboard',reader:'Interactive Reader',vocab:'Vocabulary Bank',practice:'Practice Lab',studio:'Theme & Focus Studio'};
   $('#viewTitle').textContent=titles[id]||'GoiScope';
   if(id==='vocab') renderVocab();
-  if(id==='review') renderReview();
+  if(id==='practice') renderPractice();
   if(id==='studio') renderThemes();
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -268,15 +280,162 @@ function renderVocab(){
   $$('.delete-vocab').forEach(b=>b.addEventListener('click',()=>{vocabBank=vocabBank.filter(v=>v.id!==b.dataset.id);saveVocab();renderVocab()}));
   $$('.speak-vocab').forEach(b=>b.addEventListener('click',()=>{const v=vocabBank.find(x=>x.id===b.dataset.id);if(v){const u=new SpeechSynthesisUtterance(v.word);u.lang='ja-JP';u.rate=.82;speechSynthesis.speak(u)}}));
 }
-function saveVocab(){localStorage.setItem(STORAGE.vocab,JSON.stringify(vocabBank));updateStats()}
+function saveVocab(){localStorage.setItem(STORAGE.vocab,JSON.stringify(vocabBank));updateStats();renderPracticeSummary()}
 
-function renderReview(){
-  $('#reviewCounter').textContent=vocabBank.length?`${Math.min(reviewIndex+1,vocabBank.length)} / ${vocabBank.length}`:'0 / 0';
-  if(!vocabBank.length){$('#reviewArea').innerHTML='<div class="empty-state"><h3>Belum ada kartu</h3><p>Tambahkan vocab dari Reader dulu.</p></div>';return}
-  if(reviewIndex>=vocabBank.length)reviewIndex=0;const v=vocabBank[reviewIndex];
-  $('#reviewArea').innerHTML=`<div class="review-card" id="reviewCard"><small>KANJI → ARTI</small><div class="q">${escapeHTML(v.word)}</div><button id="revealReview" class="secondary" style="margin-top:20px">Lihat Jawaban</button><div class="answer"><div class="reading">${escapeHTML(v.reading)}</div><h3>${escapeHTML(v.meaning)}</h3><div class="context-box">${escapeHTML(v.context||'')}</div><div class="rating-row"><button class="rate" data-r="1">Again</button><button class="rate" data-r="2">Hard</button><button class="rate" data-r="3">Good</button><button class="rate" data-r="4">Easy</button></div></div></div>`;
-  $('#revealReview').addEventListener('click',()=>$('#reviewCard').classList.add('revealed'));
-  $$('.rate').forEach(b=>b.addEventListener('click',()=>{v.rating=Number(b.dataset.r);saveVocab();reviewIndex=(reviewIndex+1)%vocabBank.length;renderReview()}));
+
+function savePracticeState(){
+  localStorage.setItem(STORAGE.practice,JSON.stringify(practiceState));
+  renderPracticeSummary();
+}
+function recordActivity(text){
+  practiceState.activities=[{text,at:new Date().toISOString()},...(practiceState.activities||[])].slice(0,30);
+  savePracticeState();
+}
+function weakScore(id){return Number(practiceState.weak?.[id]||0)}
+function markWeak(id,delta=1){
+  practiceState.weak ||= {};
+  practiceState.weak[id]=Math.max(0,(practiceState.weak[id]||0)+delta);
+  if(practiceState.weak[id]===0) delete practiceState.weak[id];
+  savePracticeState();
+}
+function weakItems(){return vocabBank.filter(v=>weakScore(v.id)>0).sort((a,b)=>weakScore(b.id)-weakScore(a.id))}
+function shuffled(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function normalizeAnswer(s=''){return String(s).trim().replace(/[\s　]/g,'').toLowerCase()}
+function setPracticePane(mode){
+  practiceMode=mode;
+  $$('.practice-tab').forEach(b=>b.classList.toggle('active',b.dataset.practice===mode));
+  $$('.practice-pane').forEach(p=>p.classList.toggle('active',p.id==='practice'+mode[0].toUpperCase()+mode.slice(1)));
+  if(mode==='flashcard') renderFlashcard();
+  if(mode==='quiz') updateQuizBest();
+  if(mode==='matching') renderMatching();
+  if(mode==='typing') renderTyping();
+  if(mode==='weak') renderWeakList();
+  if(mode==='progress') renderProgress();
+}
+function renderPractice(){
+  renderPracticeSummary();
+  setPracticePane(practiceMode);
+}
+function renderPracticeSummary(){
+  const wc=$('#practiceWordCount'), weak=$('#practiceWeakCount'), acc=$('#practiceAccuracy');
+  if(wc) wc.textContent=vocabBank.length;
+  if(weak) weak.textContent=weakItems().length;
+  if(acc) acc.textContent=practiceState.attempts?Math.round(practiceState.correct/practiceState.attempts*100)+'%':'—';
+}
+function initPractice(){
+  $$('.practice-tab').forEach(b=>b.addEventListener('click',()=>setPracticePane(b.dataset.practice)));
+  $('#flashMode')?.addEventListener('change',()=>{flashRevealed=false;renderFlashcard()});
+  $('#weakOnlyFlash')?.addEventListener('change',()=>{flashOrder=[];practiceState.flashIndex=0;savePracticeState();renderFlashcard()});
+  $('#shuffleFlashBtn')?.addEventListener('click',()=>{flashOrder=shuffled(getFlashPool().map(v=>v.id));practiceState.flashIndex=0;flashRevealed=false;savePracticeState();renderFlashcard();toast('Kartu diacak')});
+  $('#practiceFlashCard')?.addEventListener('click',()=>{if(!getCurrentFlash())return;flashRevealed=!flashRevealed;renderFlashcard()});
+  $$('[data-flash-rating]').forEach(b=>b.addEventListener('click',()=>rateFlash(b.dataset.flashRating)));
+  $('#startQuizBtn')?.addEventListener('click',startQuiz);
+  $('#newMatchBtn')?.addEventListener('click',()=>{matchSession=null;renderMatching()});
+  $('#clearWeakBtn')?.addEventListener('click',()=>{practiceState.weak={};recordActivity('Weak List di-reset');renderWeakList();toast('Weak List di-reset')});
+}
+function getFlashPool(){return $('#weakOnlyFlash')?.checked?weakItems():vocabBank}
+function ensureFlashOrder(){
+  const pool=getFlashPool();const ids=new Set(pool.map(v=>v.id));
+  flashOrder=flashOrder.filter(id=>ids.has(id));
+  if(!flashOrder.length && pool.length) flashOrder=pool.map(v=>v.id);
+  if(practiceState.flashIndex>=flashOrder.length) practiceState.flashIndex=0;
+}
+function getCurrentFlash(){ensureFlashOrder();return vocabBank.find(v=>v.id===flashOrder[practiceState.flashIndex])||null}
+function flashPromptAnswer(v,mode){
+  const context=v.context?`<div class="practice-context">${escapeHTML(v.context)}</div>`:'';
+  if(mode==='meaning-word')return {label:'ARTI → KANJI',prompt:escapeHTML(v.meaning),answer:`<div class="practice-main">${escapeHTML(v.word)}</div><div class="practice-reading">${escapeHTML(v.reading||'')}</div>${context}`};
+  if(mode==='word-reading')return {label:'KANJI → FURIGANA',prompt:escapeHTML(v.word),answer:`<div class="practice-main">${escapeHTML(v.reading||'—')}</div><div class="practice-meaning">${escapeHTML(v.meaning)}</div>${context}`};
+  if(mode==='reading-word')return {label:'FURIGANA → KANJI',prompt:escapeHTML(v.reading||'—'),answer:`<div class="practice-main">${escapeHTML(v.word)}</div><div class="practice-meaning">${escapeHTML(v.meaning)}</div>${context}`};
+  return {label:'KANJI → ARTI',prompt:escapeHTML(v.word),answer:`<div class="practice-reading">${escapeHTML(v.reading||'')}</div><div class="practice-meaning">${escapeHTML(v.meaning)}</div>${context}`};
+}
+function renderFlashcard(){
+  const card=$('#practiceFlashCard'), ratings=$('#flashRatings');if(!card)return;
+  const pool=getFlashPool();ensureFlashOrder();const v=getCurrentFlash();
+  $('#flashCounter').textContent=v?`${practiceState.flashIndex+1} / ${flashOrder.length}`:'0 / 0';
+  $('#flashStatus').textContent=$('#weakOnlyFlash')?.checked?'Weak List':'Vocabulary Bank';
+  if(!v){card.innerHTML='<div class="practice-empty"><h3>Belum ada kartu</h3><p>Tambahkan vocab dari Reader terlebih dahulu.</p></div>';ratings.classList.add('hidden');return}
+  const mode=$('#flashMode')?.value||'word-meaning', pa=flashPromptAnswer(v,mode);
+  card.innerHTML=`<small>${pa.label}</small><div class="practice-main">${pa.prompt}</div>${flashRevealed?`<div class="practice-answer">${pa.answer}</div>`:'<span class="tap-to-reveal">Tap untuk lihat jawaban</span>'}`;
+  ratings.classList.toggle('hidden',!flashRevealed);
+}
+function rateFlash(rating){
+  const v=getCurrentFlash();if(!v)return;
+  practiceState.attempts++;
+  if(rating==='again'){markWeak(v.id,2)}
+  else if(rating==='hard'){practiceState.correct++;markWeak(v.id,1)}
+  else {practiceState.correct++;markWeak(v.id,-1)}
+  recordActivity(`Flashcard ${v.word}: ${rating}`);
+  practiceState.flashIndex=(practiceState.flashIndex+1)%Math.max(1,flashOrder.length);flashRevealed=false;savePracticeState();renderFlashcard();
+}
+function updateQuizBest(){if($('#quizBest'))$('#quizBest').textContent=`Best ${practiceState.bestQuiz||0}%`}
+function startQuiz(){
+  let pool=$('#quizSource')?.value==='weak'?weakItems():vocabBank;
+  if(pool.length<2){toast('Butuh minimal 2 vocab untuk Quiz');return}
+  const count=Math.min(Number($('#quizCount')?.value||10),pool.length);
+  quizSession={items:shuffled(pool).slice(0,count),index:0,score:0,answered:false};
+  $('#quizBox').classList.remove('hidden');renderQuizQuestion();
+}
+function buildQuizOptions(target,pool){
+  const distractors=shuffled(pool.filter(v=>v.id!==target.id)).slice(0,3).map(v=>v.meaning);
+  return shuffled([target.meaning,...distractors]);
+}
+function renderQuizQuestion(){
+  const box=$('#quizBox');if(!quizSession||!box)return;
+  if(quizSession.index>=quizSession.items.length){
+    const pct=Math.round(quizSession.score/quizSession.items.length*100);practiceState.bestQuiz=Math.max(practiceState.bestQuiz||0,pct);savePracticeState();recordActivity(`Quiz selesai: ${quizSession.score}/${quizSession.items.length} (${pct}%)`);updateQuizBest();
+    box.innerHTML=`<div class="quiz-result"><div class="score-ring">${pct}%</div><h3>${quizSession.score} / ${quizSession.items.length} benar</h3><button id="restartQuiz" class="primary">Main Lagi</button></div>`;$('#restartQuiz').onclick=startQuiz;return;
+  }
+  const v=quizSession.items[quizSession.index];const pool=$('#quizSource')?.value==='weak'?weakItems():vocabBank;const opts=buildQuizOptions(v,pool);
+  box.innerHTML=`<div class="quiz-top"><span class="pill">${quizSession.index+1} / ${quizSession.items.length}</span><span class="pill">Skor ${quizSession.score}</span></div><div class="quiz-word">${escapeHTML(v.word)}</div><div class="quiz-reading">${escapeHTML(v.reading||'')}</div><p class="helper" style="text-align:center">Pilih arti yang paling tepat.</p><div class="quiz-options">${opts.map(o=>`<button class="quiz-option" data-answer="${escapeHTML(o)}">${escapeHTML(o)}</button>`).join('')}</div><div id="quizFeedback" class="quiz-feedback"></div>`;
+  $$('.quiz-option').forEach(b=>b.addEventListener('click',()=>answerQuiz(b,v)));
+}
+function answerQuiz(btn,v){
+  if(quizSession.answered)return;quizSession.answered=true;practiceState.attempts++;
+  const ok=btn.dataset.answer===v.meaning;if(ok){quizSession.score++;practiceState.correct++;markWeak(v.id,-1)}else markWeak(v.id,2);
+  $$('.quiz-option').forEach(b=>{b.disabled=true;if(b.dataset.answer===v.meaning)b.classList.add('correct')});if(!ok)btn.classList.add('wrong');
+  $('#quizFeedback').innerHTML=ok?'<strong class="ok-text">Benar ✓</strong>':`<strong class="bad-text">Belum tepat</strong><br><span>Jawaban: ${escapeHTML(v.meaning)}</span>`;
+  savePracticeState();setTimeout(()=>{quizSession.index++;quizSession.answered=false;renderQuizQuestion()},850);
+}
+function renderMatching(){
+  const area=$('#matchingArea');if(!area)return;if(vocabBank.length<2){area.innerHTML='<div class="practice-empty"><h3>Butuh minimal 2 vocab</h3><p>Simpan kata dari Reader dulu.</p></div>';return}
+  if(!matchSession){const items=shuffled(vocabBank).slice(0,Math.min(6,vocabBank.length));matchSession={items,selectedWord:null,selectedMeaning:null,matched:new Set()}}
+  const words=shuffled(matchSession.items), meanings=shuffled(matchSession.items);
+  area.innerHTML=`<div class="match-column">${words.map(v=>`<button class="match-item ${matchSession.matched.has(v.id)?'matched':''}" data-match-word="${v.id}" ${matchSession.matched.has(v.id)?'disabled':''}>${escapeHTML(v.word)}<small>${escapeHTML(v.reading||'')}</small></button>`).join('')}</div><div class="match-column">${meanings.map(v=>`<button class="match-item ${matchSession.matched.has(v.id)?'matched':''}" data-match-meaning="${v.id}" ${matchSession.matched.has(v.id)?'disabled':''}>${escapeHTML(v.meaning)}</button>`).join('')}</div>`;
+  $$('[data-match-word]').forEach(b=>b.onclick=()=>{matchSession.selectedWord=b.dataset.matchWord;checkMatchSelection();highlightMatchSelection()});
+  $$('[data-match-meaning]').forEach(b=>b.onclick=()=>{matchSession.selectedMeaning=b.dataset.matchMeaning;checkMatchSelection();highlightMatchSelection()});
+}
+function highlightMatchSelection(){
+  $$('[data-match-word]').forEach(b=>b.classList.toggle('selected',b.dataset.matchWord===matchSession?.selectedWord));$$('[data-match-meaning]').forEach(b=>b.classList.toggle('selected',b.dataset.matchMeaning===matchSession?.selectedMeaning));
+}
+function checkMatchSelection(){
+  if(!matchSession?.selectedWord||!matchSession?.selectedMeaning)return;practiceState.attempts++;
+  if(matchSession.selectedWord===matchSession.selectedMeaning){practiceState.correct++;matchSession.matched.add(matchSession.selectedWord);markWeak(matchSession.selectedWord,-1);toast('Cocok ✓')}else{markWeak(matchSession.selectedWord,1);toast('Belum cocok')}
+  matchSession.selectedWord=null;matchSession.selectedMeaning=null;savePracticeState();
+  if(matchSession.matched.size===matchSession.items.length){recordActivity(`Matching selesai: ${matchSession.items.length} pasangan`);matchSession=null;setTimeout(renderMatching,500)}else renderMatching();
+}
+function ensureTypingOrder(){const ids=vocabBank.map(v=>v.id);typingOrder=typingOrder.filter(id=>ids.includes(id));if(!typingOrder.length&&ids.length)typingOrder=shuffled(ids);if(practiceState.typingIndex>=typingOrder.length)practiceState.typingIndex=0}
+function renderTyping(){
+  const area=$('#typingArea');if(!area)return;ensureTypingOrder();const v=vocabBank.find(x=>x.id===typingOrder[practiceState.typingIndex]);$('#typingCounter').textContent=v?`${practiceState.typingIndex+1} / ${typingOrder.length}`:'0 / 0';
+  if(!v){area.innerHTML='<div class="practice-empty"><h3>Belum ada vocab</h3><p>Simpan kata dari Reader dulu.</p></div>';return}
+  area.innerHTML=`<div class="typing-card"><small>ARTI → KETIK KATA JEPANG</small><h2>${escapeHTML(v.meaning)}</h2><div class="typing-reading-hint">Reading hint: ${escapeHTML(v.reading||'—')}</div><input id="typingInput" autocomplete="off" lang="ja" placeholder="Ketik kanji/kata Jepang..."/><div class="typing-actions"><button id="checkTypingBtn" class="primary">Cek Jawaban</button><button id="skipTypingBtn" class="ghost">Lewati</button></div><div id="typingFeedback" class="quiz-feedback"></div></div>`;
+  $('#checkTypingBtn').onclick=()=>checkTyping(v);$('#skipTypingBtn').onclick=()=>nextTyping();$('#typingInput').addEventListener('keydown',e=>{if(e.key==='Enter')checkTyping(v)});setTimeout(()=>$('#typingInput')?.focus(),50);
+}
+function checkTyping(v){
+  const input=$('#typingInput');if(!input||input.disabled)return;const ans=normalizeAnswer(input.value);if(!ans)return;practiceState.attempts++;const ok=ans===normalizeAnswer(v.word)||ans===normalizeAnswer(v.reading);
+  if(ok){practiceState.correct++;markWeak(v.id,-1);$('#typingFeedback').innerHTML='<strong class="ok-text">Benar ✓</strong>'}else{markWeak(v.id,2);$('#typingFeedback').innerHTML=`<strong class="bad-text">Belum tepat</strong><br>Jawaban: <b>${escapeHTML(v.word)}</b> (${escapeHTML(v.reading||'')})`}
+  input.disabled=true;savePracticeState();setTimeout(nextTyping,900);
+}
+function nextTyping(){ensureTypingOrder();practiceState.typingIndex=(practiceState.typingIndex+1)%Math.max(1,typingOrder.length);savePracticeState();renderTyping()}
+function renderWeakList(){
+  const box=$('#weakList');if(!box)return;const items=weakItems();if(!items.length){box.innerHTML='<div class="practice-empty"><h3>Weak List kosong 🎉</h3><p>Kata yang sering salah akan otomatis masuk ke sini.</p></div>';return}
+  box.innerHTML=items.map(v=>`<article class="weak-item"><div><strong>${escapeHTML(v.word)}</strong><span>${escapeHTML(v.reading||'')}</span><small>${escapeHTML(v.meaning)}</small></div><div class="weak-score">Weak ${weakScore(v.id)}</div><button class="text-btn weak-practice-btn" data-id="${v.id}">Latih</button></article>`).join('');
+  $$('.weak-practice-btn').forEach(b=>b.onclick=()=>{$('#weakOnlyFlash').checked=true;flashOrder=[b.dataset.id,...weakItems().filter(v=>v.id!==b.dataset.id).map(v=>v.id)];practiceState.flashIndex=0;flashRevealed=false;setPracticePane('flashcard')});
+}
+function renderProgress(){
+  const attempts=practiceState.attempts||0,correct=practiceState.correct||0,accuracy=attempts?Math.round(correct/attempts*100):0,weak=weakItems().length;
+  $('#progressCards').innerHTML=`<article class="stat-card"><small>VOCAB</small><b>${vocabBank.length}</b><span>kata aktif</span></article><article class="stat-card"><small>ATTEMPTS</small><b>${attempts}</b><span>jawaban/review</span></article><article class="stat-card"><small>ACCURACY</small><b>${attempts?accuracy+'%':'—'}</b><span>akurasi total</span></article><article class="stat-card"><small>WEAK</small><b>${weak}</b><span>perlu diulang</span></article>`;
+  if(!vocabBank.length)$('#masteryList').innerHTML='<p class="helper">Belum ada vocab.</p>';else $('#masteryList').innerHTML=vocabBank.slice().sort((a,b)=>weakScore(a.id)-weakScore(b.id)).map(v=>{const w=weakScore(v.id),mastery=Math.max(10,Math.min(100,100-w*18));return `<div class="mastery-row"><div><b>${escapeHTML(v.word)}</b><small>${escapeHTML(v.meaning)}</small></div><div class="mastery-track"><span style="width:${mastery}%"></span></div><em>${mastery}%</em></div>`}).join('');
+  const acts=practiceState.activities||[];$('#practiceActivity').innerHTML=acts.length?acts.slice(0,12).map(a=>`<div class="activity-row"><span>${escapeHTML(a.text)}</span><small>${new Date(a.at).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</small></div>`).join(''):'<p class="helper">Belum ada aktivitas latihan.</p>';
 }
 
 function renderContinue(){
@@ -310,7 +469,7 @@ function initInstall(){
 }
 
 function init(){
-  applyTheme(localStorage.getItem(STORAGE.theme)||'sakura');initNav();initSourceTabs();initLookup();initReaderControls();initAudio();initInstall();
-  $('#vocabSearch').addEventListener('input',renderVocab);setReaderFont(readerFont);renderArticle();renderVocab();renderReview();updateStats();
+  applyTheme(localStorage.getItem(STORAGE.theme)||'sakura');initNav();initSourceTabs();initLookup();initReaderControls();initPractice();initAudio();initInstall();
+  $('#vocabSearch').addEventListener('input',renderVocab);setReaderFont(readerFont);renderArticle();renderVocab();renderPractice();updateStats();
 }
 init();

@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icons/icon-192.png" />
   <link rel="stylesheet" href="styles.css" />
-  <title>GoiScope V8</title>
+  <title>GoiScope V8.1</title>
 </head>
 <body>
   <div class="app-shell">
@@ -16,8 +16,8 @@
       <div class="brand">
         <div class="brand-mark">語</div>
         <div>
-          <strong>GoiScope <span class="vbadge">V8</span></strong>
-          <span>N1/N2 Interactive Reader</span>
+          <strong>GoiScope <span class="vbadge">V8.1</span></strong>
+          <span>N1/N2 Reader + Practice PWA</span>
         </div>
       </div>
 
@@ -25,13 +25,13 @@
         <button class="nav-btn active" data-view="home"><span>⌂</span> Home</button>
         <button class="nav-btn" data-view="reader"><span>文</span> Reader</button>
         <button class="nav-btn" data-view="vocab"><span>語</span> Vocabulary</button>
-        <button class="nav-btn" data-view="review"><span>↺</span> Review</button>
+        <button class="nav-btn" data-view="practice"><span>◎</span> Practice</button>
         <button class="nav-btn" data-view="studio"><span>✦</span> Studio</button>
       </nav>
 
       <div class="side-note">
-        <strong>V8 Focus</strong>
-        <span>Tap kata Jepang apa pun → analisis konteks → simpan ke bank.</span>
+        <strong>V8.1 Flow</strong>
+        <span>Reader → simpan vocab → latih di Flashcard, Quiz, Matching, Typing & Weak List.</span>
       </div>
     </aside>
 
@@ -51,12 +51,13 @@
       <section id="home" class="view active">
         <div class="hero panel-glow">
           <div>
-            <span class="eyebrow">V8 • INTERACTIVE READER STUDIO</span>
+            <span class="eyebrow">V8.1 • READER + PRACTICE PWA</span>
             <h2>Baca artikel Jepang. Tap kata yang bikin kamu berhenti.</h2>
             <p>AI boleh melewatkan sebuah kata. Kamu tetap bisa tap kata itu sendiri, lihat pembahasan kontekstual, lalu simpan langsung ke Vocabulary Bank.</p>
             <div class="hero-actions">
               <button class="primary go-view" data-view="reader">Buka Reader</button>
-              <button class="secondary go-view" data-view="studio">Theme & Music</button>
+              <button class="secondary go-view" data-view="practice">Mulai Practice</button>
+              <button class="ghost go-view" data-view="studio">Theme & Music</button>
             </div>
           </div>
           <div class="hero-card">
@@ -157,10 +158,97 @@
         <div id="vocabGrid" class="vocab-grid"></div>
       </section>
 
-      <section id="review" class="view">
-        <div class="panel">
-          <div class="panel-head"><div><small>REVIEW</small><h3>Review dari Vocabulary Bank</h3></div><span id="reviewCounter" class="pill">0 / 0</span></div>
-          <div id="reviewArea" class="review-area"></div>
+      <section id="practice" class="view">
+        <div class="practice-header panel">
+          <div>
+            <small>PRACTICE LAB</small>
+            <h3>Latihan kosakata dari Vocabulary Bank</h3>
+            <p class="helper">Semua kata yang kamu simpan dari Reader otomatis masuk ke sini.</p>
+          </div>
+          <div class="practice-summary">
+            <span class="pill"><b id="practiceWordCount">0</b> kata</span>
+            <span class="pill"><b id="practiceWeakCount">0</b> weak</span>
+            <span class="pill"><b id="practiceAccuracy">—</b> akurasi</span>
+          </div>
+        </div>
+
+        <div class="practice-tabs panel" role="tablist" aria-label="Mode latihan">
+          <button class="practice-tab active" data-practice="flashcard">↺ Flashcard</button>
+          <button class="practice-tab" data-practice="quiz">✓ Quiz</button>
+          <button class="practice-tab" data-practice="matching">▦ Matching</button>
+          <button class="practice-tab" data-practice="typing">⌨ Typing</button>
+          <button class="practice-tab" data-practice="weak">⚠ Weak List</button>
+          <button class="practice-tab" data-practice="progress">▥ Progress</button>
+        </div>
+
+        <div id="practiceFlashcard" class="practice-pane active">
+          <div class="practice-layout">
+            <aside class="panel practice-settings">
+              <small>FLASHCARD</small><h3>Hafalan bolak-balik</h3>
+              <label>Arah kartu
+                <select id="flashMode">
+                  <option value="word-meaning">Kanji → Arti + Furigana</option>
+                  <option value="meaning-word">Arti Indonesia → Kanji + Furigana</option>
+                  <option value="word-reading">Kanji → Furigana</option>
+                  <option value="reading-word">Furigana → Kanji + Arti</option>
+                </select>
+              </label>
+              <label class="toggle-row"><input id="weakOnlyFlash" type="checkbox" /> Hanya Weak List</label>
+              <button id="shuffleFlashBtn" class="secondary full">Acak kartu</button>
+            </aside>
+            <div class="panel practice-stage">
+              <div class="practice-top"><span id="flashCounter" class="pill">0 / 0</span><span id="flashStatus" class="pill">Vocabulary Bank</span></div>
+              <button id="practiceFlashCard" class="practice-flashcard" aria-label="Balik kartu"></button>
+              <div id="flashRatings" class="rating-row hidden">
+                <button class="rate again" data-flash-rating="again">Again</button>
+                <button class="rate hard" data-flash-rating="hard">Hard</button>
+                <button class="rate good" data-flash-rating="good">Good</button>
+                <button class="rate easy" data-flash-rating="easy">Easy</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="practiceQuiz" class="practice-pane">
+          <div class="panel quiz-setup">
+            <div class="panel-head"><div><small>QUIZ</small><h3>Pilihan ganda</h3></div><span id="quizBest" class="pill">Best 0%</span></div>
+            <div class="practice-form-grid">
+              <label>Jumlah soal<select id="quizCount"><option>5</option><option selected>10</option><option>15</option></select></label>
+              <label>Sumber<select id="quizSource"><option value="all">Semua vocab</option><option value="weak">Weak List</option></select></label>
+            </div>
+            <button id="startQuizBtn" class="primary">Mulai Quiz</button>
+          </div>
+          <div id="quizBox" class="panel hidden"></div>
+        </div>
+
+        <div id="practiceMatching" class="practice-pane">
+          <div class="panel">
+            <div class="panel-head"><div><small>MATCHING</small><h3>Pasangkan kata dan arti</h3></div><button id="newMatchBtn" class="secondary">Acak Lagi</button></div>
+            <div id="matchingArea" class="matching-area"></div>
+          </div>
+        </div>
+
+        <div id="practiceTyping" class="practice-pane">
+          <div class="panel">
+            <div class="panel-head"><div><small>TYPING</small><h3>Ketik jawaban Jepang</h3></div><span id="typingCounter" class="pill">0 / 0</span></div>
+            <div id="typingArea" class="typing-area"></div>
+          </div>
+        </div>
+
+        <div id="practiceWeak" class="practice-pane">
+          <div class="panel">
+            <div class="panel-head"><div><small>WEAK LIST</small><h3>Kata yang perlu perhatian</h3></div><button id="clearWeakBtn" class="ghost">Reset Weak</button></div>
+            <p class="helper">Jawaban salah dan rating Again otomatis menaikkan skor kelemahan kata.</p>
+            <div id="weakList" class="weak-list"></div>
+          </div>
+        </div>
+
+        <div id="practiceProgress" class="practice-pane">
+          <div id="progressCards" class="stats-grid"></div>
+          <div class="two-col">
+            <div class="panel"><div class="panel-head"><div><small>MASTERY</small><h3>Penguasaan kosakata</h3></div></div><div id="masteryList" class="mastery-list"></div></div>
+            <div class="panel"><div class="panel-head"><div><small>ACTIVITY</small><h3>Aktivitas latihan</h3></div></div><div id="practiceActivity" class="activity-list"></div></div>
+          </div>
         </div>
       </section>
 
@@ -198,7 +286,7 @@
       <button class="nav-btn active" data-view="home">⌂<span>Home</span></button>
       <button class="nav-btn" data-view="reader">文<span>Reader</span></button>
       <button class="nav-btn" data-view="vocab">語<span>Vocab</span></button>
-      <button class="nav-btn" data-view="review">↺<span>Review</span></button>
+      <button class="nav-btn" data-view="practice">◎<span>Practice</span></button>
       <button class="nav-btn" data-view="studio">✦<span>Studio</span></button>
     </nav>
   </div>

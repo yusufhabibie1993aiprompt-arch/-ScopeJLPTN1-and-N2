@@ -1,6 +1,6 @@
 {
-  "name": "GoiScope V8.1 — JLPT N1/N2 Reader & Practice",
-  "short_name": "GoiScope V8.1",
+  "name": "GoiScope V8.2 — JLPT N1/N2 Reader & Practice",
+  "short_name": "GoiScope V8.2",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

@@ -1,20 +1,30 @@
-# GoiScope V8.1 — Reader + Practice PWA
+# GoiScope V8.2 Final Candidate PWA
 
-V8.1 mempertahankan fitur V8 dan mengembalikan Practice Lab.
+Frontend PWA untuk GitHub Pages.
 
-## Fitur utama
-- Interactive Reader: tap kata Jepang apa pun.
-- Vocabulary Bank: kata yang disimpan dari Reader otomatis menjadi bahan latihan.
-- Practice Lab: Flashcard 4 arah, Quiz, Matching, Typing, Weak List, Progress.
-- Theme Studio: Sakura, Sumi Night, Matcha, Seigaiha, Tokyo Neon, Shinbun.
-- Focus Sound: synth/ambience offline + audio lokal.
-- PWA: manifest + service worker + icon 192/512.
+## Fitur V8.2
+- Interactive Reader + AI analysis
+- Import artikel via URL melalui backend permanen Vercel
+- Tap-any-word AI lookup
+- Vocabulary Bank
+- Practice: Flashcard, Quiz, Matching, Typing, Weak List, Progress
+- Daily Review / SRS queue + streak
+- Article Library + History + Favorite + status selesai
+- Theme Studio + Focus Music
+- Settings Center
+- Backup / Restore JSON
+- Offline mode untuk artikel tersimpan, vocab, practice, theme dan fitur lokal
+- AI loading progress + Cancel
+- PWA update notification
 
-## Upgrade dari V8
-V8.1 tetap menggunakan key localStorage V8 untuk Theme, Vocabulary Bank, Article, dan Reader Font, sehingga data V8 yang sudah tersimpan tidak sengaja diputus. Data Practice memakai storage baru `goiscope_v8_1_practice`.
+## Backend permanen
+Frontend ini memanggil backend berikut dan tidak menyimpan OpenAI API key:
+https://goiscope-ai-backend-jlptn-1and-n2.vercel.app
 
-## Deploy ke GitHub Pages
-Upload seluruh isi ZIP ke ROOT repository (bukan ke subfolder), lalu commit. Setelah GitHub Pages selesai deploy, lakukan hard refresh. Karena cache service worker dinaikkan ke `goiscope-v8-1-practice-pwa-1`, cache V8 lama akan dibersihkan saat service worker baru aktif.
+Backend dikelola di repo/backend Vercel terpisah. Jangan masukkan OPENAI_API_KEY ke frontend.
 
-## Backend AI
-Pada tahap V8.1 ini endpoint AI sengaja BELUM diubah, sesuai roadmap. Frontend masih memakai endpoint yang sama seperti V8 (`/api/analyze-text`, `/api/import-url`, `/api/lookup-word`). Setelah UI/PWA Practice stabil, backend akan dibenahi menjadi satu URL permanen.
+## Upload ke GitHub Pages
+Upload isi folder ini langsung ke root repo frontend `-ScopeJLPTN1-and-N2`.
+File utama harus sejajar: `index.html`, `app.js`, `styles.css`, `manifest.webmanifest`, `service-worker.js`.
+
+Karena versi lama memakai service worker cache-first, saat pertama kali naik ke V8.2 lakukan satu kali hard refresh (Ctrl+Shift+R) atau unregister service worker lama. Setelah V8.2 aktif, update berikutnya akan menampilkan banner "Versi baru tersedia".

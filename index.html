@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icons/icon-192.png" />
   <link rel="stylesheet" href="styles.css" />
-  <title>GoiScope V8.1</title>
+  <title>GoiScope V8.2</title>
 </head>
 <body>
   <div class="app-shell">
@@ -16,7 +16,7 @@
       <div class="brand">
         <div class="brand-mark">語</div>
         <div>
-          <strong>GoiScope <span class="vbadge">V8.1</span></strong>
+          <strong>GoiScope <span class="vbadge">V8.2</span></strong>
           <span>N1/N2 Reader + Practice PWA</span>
         </div>
       </div>
@@ -30,7 +30,7 @@
       </nav>
 
       <div class="side-note">
-        <strong>V8.1 Flow</strong>
+        <strong>V8.2 Flow</strong>
         <span>Reader → simpan vocab → latih di Flashcard, Quiz, Matching, Typing & Weak List.</span>
       </div>
     </aside>
@@ -51,7 +51,7 @@
       <section id="home" class="view active">
         <div class="hero panel-glow">
           <div>
-            <span class="eyebrow">V8.1 • READER + PRACTICE PWA</span>
+            <span class="eyebrow">V8.2 • FINAL CANDIDATE PWA</span>
             <h2>Baca artikel Jepang. Tap kata yang bikin kamu berhenti.</h2>
             <p>AI boleh melewatkan sebuah kata. Kamu tetap bisa tap kata itu sendiri, lihat pembahasan kontekstual, lalu simpan langsung ke Vocabulary Bank.</p>
             <div class="hero-actions">
@@ -76,6 +76,20 @@
           <article class="stat-card"><small>FOCUS</small><b id="statAudio">OFF</b><span>audio belajar</span></article>
         </div>
 
+        <div class="panel daily-review">
+          <div class="panel-head wrap">
+            <div><small>今日の復習 • DAILY SRS</small><h3>Review hari ini</h3></div>
+            <div class="streak-badge">🔥 <b id="homeStreak">0</b> hari</div>
+          </div>
+          <div class="daily-cards">
+            <div><small>DUE TODAY</small><b id="homeDue">0</b></div>
+            <div><small>WEAK</small><b id="homeWeak">0</b></div>
+            <div><small>NEW</small><b id="homeNew">0</b></div>
+            <div><small>REVIEWED</small><b id="homeReviewed">0</b></div>
+          </div>
+          <button id="startDailyReviewBtn" class="primary">Mulai Review Hari Ini</button>
+        </div>
+
         <div class="two-col">
           <div class="panel">
             <div class="panel-head"><div><small>CONTINUE</small><h3>Artikel terakhir</h3></div><button class="text-btn go-view" data-view="reader">Buka →</button></div>
@@ -97,7 +111,7 @@
         <div class="panel reader-import">
           <div class="panel-head wrap">
             <div><small>ARTICLE SOURCE</small><h3>Artikel Jepang</h3></div>
-            <div class="status-pills"><div class="pill">Tap-any-word V8.1</div><div id="backendStatus" class="pill backend-status" data-status="checking">AI: checking…</div></div>
+            <div class="status-pills"><div class="pill">Tap-any-word V8.2</div><div id="networkStatus" class="pill network-status">Online</div><div id="backendStatus" class="pill backend-status" data-status="checking">AI: checking…</div></div>
           </div>
           <div class="reader-tabs">
             <button class="mini-tab active" data-source-tab="demo">Demo</button>
@@ -121,6 +135,15 @@
             <button id="importUrlBtn" class="primary">Ambil & Analisis Artikel</button>
             <p class="helper">Untuk situs yang memblokir pengambilan otomatis, gunakan tab “Tempel teks”.</p>
           </div>
+        </div>
+
+        <div class="panel article-library-panel">
+          <div class="panel-head wrap">
+            <div><small>ARTICLE LIBRARY + HISTORY</small><h3>Artikel tersimpan</h3></div>
+            <div class="library-actions"><button id="showAllArticlesBtn" class="ghost">Semua</button><button id="showFavoriteArticlesBtn" class="ghost">★ Favorit</button></div>
+          </div>
+          <p class="helper">Artikel yang sudah dianalisis disimpan lokal supaya bisa dibuka lagi tanpa memakai AI ulang.</p>
+          <div id="articleLibraryList" class="article-library-list"></div>
         </div>
 
         <div class="reader-toolbar panel">
@@ -279,6 +302,35 @@
             </div>
           </div>
         </div>
+
+        <div class="panel settings-center">
+          <div class="panel-head wrap"><div><small>SETTINGS CENTER</small><h3>Preferensi, backup & status</h3></div><span class="pill">V8.2.0</span></div>
+          <div class="settings-grid">
+            <section class="settings-block"><h4>Reader Defaults</h4>
+              <label class="toggle"><input id="settingFurigana" type="checkbox" checked><span></span> Furigana default</label>
+              <label class="toggle"><input id="settingTranslation" type="checkbox" checked><span></span> Terjemahan default</label>
+              <label class="toggle"><input id="settingHighlight" type="checkbox" checked><span></span> AI Highlight default</label>
+              <label>Ukuran teks <input id="settingFontSize" type="range" min="16" max="30" value="20"><b id="settingFontLabel">20px</b></label>
+            </section>
+            <section class="settings-block"><h4>Audio</h4>
+              <label>BGM <input id="settingBgmVolume" type="range" min="0" max="100" value="25"><b id="settingBgmLabel">25%</b></label>
+              <label>TTS <input id="settingTtsVolume" type="range" min="0" max="100" value="85"><b id="settingTtsLabel">85%</b></label>
+              <label>SFX <input id="settingSfxVolume" type="range" min="0" max="100" value="50"><b id="settingSfxLabel">50%</b></label>
+            </section>
+            <section class="settings-block"><h4>Data</h4>
+              <button id="exportBackupBtn" class="secondary full">Export Backup JSON</button>
+              <button id="importBackupBtn" class="ghost full">Import Backup</button>
+              <input id="backupFileInput" class="hidden" type="file" accept="application/json,.json">
+              <button id="resetProgressBtn" class="danger-text settings-danger">Reset Progress Practice</button>
+            </section>
+            <section class="settings-block"><h4>Status</h4>
+              <div class="status-line"><span>Internet</span><b id="settingsNetworkStatus">—</b></div>
+              <div class="status-line"><span>AI Backend</span><b id="settingsBackendStatus">—</b></div>
+              <div class="status-line"><span>Versi</span><b>V8.2.0</b></div>
+              <button id="checkUpdateBtn" class="ghost full">Cek Update PWA</button>
+            </section>
+          </div>
+        </div>
       </section>
     </main>
 
@@ -289,6 +341,26 @@
       <button class="nav-btn" data-view="practice">◎<span>Practice</span></button>
       <button class="nav-btn" data-view="studio">✦<span>Studio</span></button>
     </nav>
+  </div>
+
+  <div id="updateBanner" class="update-banner hidden">
+    <div><b>Versi baru tersedia</b><span>Update GoiScope tanpa kehilangan data lokal.</span></div>
+    <button id="applyUpdateBtn" class="primary">Update sekarang</button>
+    <button id="dismissUpdateBtn" class="icon-btn" aria-label="Tutup">×</button>
+  </div>
+
+  <div id="aiProgressModal" class="ai-progress-modal hidden" aria-hidden="true">
+    <div class="ai-progress-card">
+      <div class="panel-head"><div><small>AI WORKFLOW</small><h3 id="aiProgressTitle">Memproses artikel</h3></div><button id="cancelAiBtn" class="ghost">Batalkan</button></div>
+      <div id="aiProgressSteps" class="ai-progress-steps">
+        <div data-step="fetch"><span>1</span><b>Mengambil artikel</b></div>
+        <div data-step="clean"><span>2</span><b>Membersihkan teks</b></div>
+        <div data-step="analyze"><span>3</span><b>Menganalisis paragraf</b></div>
+        <div data-step="vocab"><span>4</span><b>Membuat vocabulary</b></div>
+        <div data-step="done"><span>5</span><b>Selesai</b></div>
+      </div>
+      <p id="aiProgressHint" class="helper">Mohon tunggu. Artikel panjang memang membutuhkan waktu.</p>
+    </div>
   </div>
 
   <div id="lookupSheet" class="lookup-sheet" aria-hidden="true">

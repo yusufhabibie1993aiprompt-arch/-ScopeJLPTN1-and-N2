@@ -4,8 +4,12 @@ const STORAGE = {
   lookups: 'goiscope_v8_lookups',
   article: 'goiscope_v8_article',
   font: 'goiscope_v8_font',
-  practice: 'goiscope_v8_1_practice'
+  practice: 'goiscope_v8_1_practice',
+  articles: 'goiscope_v8_2_articles',
+  settings: 'goiscope_v8_2_settings'
 };
+
+const APP_VERSION = '8.2.0';
 
 const API_BASE_URL = 'https://goiscope-ai-backend-jlptn-1and-n2.vercel.app';
 const apiUrl = path => `${API_BASE_URL}${path.startsWith('/') ? path : '/' + path}`;
@@ -39,9 +43,16 @@ function normalizeArticleResponse(data={}){
     };
   });
   return {
+    id: data.id || crypto.randomUUID?.() || `article-${Date.now()}`,
     title: data.title || 'Artikel Jepang',
     category: data.category || 'Artikel',
     source: data.source || '',
+    sourceUrl: data.sourceUrl || data.url || '',
+    favorite: Boolean(data.favorite),
+    status: data.status || 'reading',
+    createdAt: data.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    lastOpenedAt: data.lastOpenedAt || new Date().toISOString(),
     paragraphs
   };
 }
@@ -55,17 +66,25 @@ function findArticleVocab(word){
 }
 
 async function checkBackendHealth(){
-  const el=$('#backendStatus');
+  const el=$('#backendStatus'), settingsEl=$('#settingsBackendStatus');
+  if(!navigator.onLine){
+    if(el){el.textContent='AI Backend: Offline';el.dataset.status='offline'}
+    if(settingsEl) settingsEl.textContent='Offline';
+    return false;
+  }
   if(el){el.textContent='AI: checking…';el.dataset.status='checking'}
+  if(settingsEl) settingsEl.textContent='Checking…';
   try{
     const res=await fetch(apiUrl('/api/health'),{cache:'no-store'});
     if(!res.ok)throw new Error(`HTTP ${res.status}`);
     const data=await res.json();
     if(!data?.ok)throw new Error('Backend not ready');
     if(el){el.textContent='AI Backend: Online';el.dataset.status='online'}
+    if(settingsEl) settingsEl.textContent='Online';
     return true;
   }catch(err){
     if(el){el.textContent='AI Backend: Offline';el.dataset.status='offline'}
+    if(settingsEl) settingsEl.textContent='Offline';
     return false;
   }
 }
@@ -132,9 +151,18 @@ let readerFont = Number(localStorage.getItem(STORAGE.font) || 20);
 let selectedSound = 'lofi';
 let audioCtx = null, masterGain = null, soundTimer = null, localAudio = null, activeNodes = [];
 let deferredPrompt = null;
+let articles = (()=>{try{return JSON.parse(localStorage.getItem(STORAGE.articles)||'[]')}catch{return []}})();
+const defaultSettings = {furigana:true,translation:true,highlight:true,font:20,bgmVolume:25,ttsVolume:85,sfxVolume:50,selectedSound:'lofi'};
+let settings = (()=>{try{return {...defaultSettings,...JSON.parse(localStorage.getItem(STORAGE.settings)||'{}')}}catch{return {...defaultSettings}}})();
+readerFont = Number(settings.font || readerFont || 20);
+selectedSound = settings.selectedSound || 'lofi';
+let articleLibraryFilter='all';
+let aiAbortController=null;
+let aiProgressTimer=null;
+let updateRegistration=null;
 
 const defaultPracticeState = {
-  weak:{}, attempts:0, correct:0, bestQuiz:0, activities:[], flashIndex:0, typingIndex:0
+  weak:{}, attempts:0, correct:0, bestQuiz:0, activities:[], flashIndex:0, typingIndex:0, srs:{}, streak:{count:0,lastDate:''}, reviewedToday:{date:'',count:0}
 };
 let practiceState = (()=>{try{return {...defaultPracticeState,...JSON.parse(localStorage.getItem(STORAGE.practice)||'{}')}}catch{return {...defaultPracticeState}}})();
 let practiceMode='flashcard';
@@ -158,7 +186,9 @@ function setView(id){
   $('#viewTitle').textContent=titles[id]||'GoiScope';
   if(id==='vocab') renderVocab();
   if(id==='practice') renderPractice();
-  if(id==='studio') renderThemes();
+  if(id==='studio'){ renderThemes(); renderSettings(); }
+  if(id==='reader') renderArticleLibrary();
+  if(id==='home') renderDailyReview();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -188,14 +218,19 @@ function initSourceTabs(){
     $$('.mini-tab').forEach(x=>x.classList.toggle('active',x===b));
     $$('.source-pane').forEach(p=>p.classList.toggle('active',p.dataset.sourcePane===b.dataset.sourceTab));
   }));
-  $('#loadDemoBtn').addEventListener('click',()=>{currentArticle=structuredClone(demoArticle);saveAndRenderArticle();toast('Artikel demo dimuat')});
+  $('#loadDemoBtn').addEventListener('click',()=>{currentArticle=normalizeArticleResponse({...structuredClone(demoArticle),source:'Demo',status:'reading'});saveAndRenderArticle();toast('Artikel demo dimuat')});
   $('#analyzeTextBtn').addEventListener('click',analyzeTextArticle);
   $('#importUrlBtn').addEventListener('click',importUrlArticle);
 }
 
 function saveAndRenderArticle(){
-  localStorage.setItem(STORAGE.article,JSON.stringify(currentArticle));
-  renderArticle();updateStats();
+  if(currentArticle){
+    currentArticle=normalizeArticleResponse(currentArticle);
+    currentArticle.lastOpenedAt=new Date().toISOString();
+    localStorage.setItem(STORAGE.article,JSON.stringify(currentArticle));
+    upsertArticle(currentArticle);
+  }
+  renderArticle();updateStats();renderArticleLibrary();
 }
 
 function renderArticle(){
@@ -207,6 +242,7 @@ function renderArticle(){
   $('#articleEmpty').classList.add('hidden');$('#articleView').classList.remove('hidden');
   $('#articleTitle').textContent=currentArticle.title||'Artikel Jepang';
   $('#articleCategory').textContent=currentArticle.category||'Artikel';
+  $('#saveArticleBtn').textContent=currentArticle.favorite?'★ Favorit':'☆ Favorit';
   $('#articleBody').innerHTML=(currentArticle.paragraphs||[]).map((p,i)=>{
     const marked=markHighlights(p.jp,p.highlights||[]);
     return `<section class="article-paragraph" data-p="${i}"><div class="jp-line" data-p="${i}">${marked}</div>${p.furigana?`<div class="furigana-line">${escapeHTML(p.furigana)}</div>`:''}${p.id?`<div class="translation">${escapeHTML(p.id)}</div>`:''}</section>`;
@@ -270,6 +306,10 @@ async function openWordLookup(word,context,source){
   document.body.style.overflow='hidden';
   const known=localDictionary[clean] || findArticleVocab(clean);
   if(known){currentLookup={...currentLookup,...known,context:currentLookup.context};renderLookup(currentLookup);return}
+  if(!navigator.onLine){
+    currentLookup={...currentLookup,reading:'',meaning:'Belum tersedia offline.',jlpt:'?',register:'',nuance:'Kata ini belum pernah dianalisis. Sambungkan internet untuk AI Lookup.',synonyms:[],collocations:[]};
+    renderLookup(currentLookup,true);return;
+  }
   try{
     const res=await fetch(apiUrl('/api/lookup-word'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word:clean,sentence:currentLookup.context,articleTitle:currentArticle?.title||''})});
     if(!res.ok){const detail=await res.text();throw new Error(detail||`Lookup HTTP ${res.status}`)}
@@ -299,7 +339,7 @@ function closeLookup(){
 function initLookup(){
   $('#closeLookupBtn').addEventListener('click',closeLookup);$('#lookupBackdrop').addEventListener('click',closeLookup);
   $('#addVocabBtn').addEventListener('click',()=>{if(!currentLookup)return;addCurrentLookupToVocab()});
-  $('#speakWordBtn').addEventListener('click',()=>{if(!currentLookup)return;const u=new SpeechSynthesisUtterance(currentLookup.word);u.lang='ja-JP';u.rate=.82;speechSynthesis.cancel();speechSynthesis.speak(u)});
+  $('#speakWordBtn').addEventListener('click',()=>{if(!currentLookup)return;const u=new SpeechSynthesisUtterance(currentLookup.word);u.lang='ja-JP';u.rate=.82;u.volume=(settings.ttsVolume||85)/100;speechSynthesis.cancel();speechSynthesis.speak(u)});
   $('.tap-demo').addEventListener('click',()=>openWordLookup('踏まえる','結果を踏まえて、今後の方針を決めます。','DEMO TAP'));
 }
 function addCurrentLookupToVocab(){
@@ -310,43 +350,61 @@ function addCurrentLookupToVocab(){
 
 async function analyzeTextArticle(){
   const text=$('#articleTextInput').value.trim();if(!text){toast('Tempel teks Jepang dulu');return}
+  if(!navigator.onLine){toast('Mode offline: analisis AI membutuhkan internet');return}
   const title=$('#articleTitleInput').value.trim()||'Artikel Jepang';
   const btn=$('#analyzeTextBtn');btn.disabled=true;btn.textContent='Menganalisis...';
+  aiAbortController=new AbortController();startAiProgress('text');
   try{
-    const res=await fetch(apiUrl('/api/analyze-text'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,text})});
+    const res=await fetch(apiUrl('/api/analyze-text'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,text}),signal:aiAbortController.signal});
     if(!res.ok){const detail=await res.text();throw new Error(detail||`Analyze HTTP ${res.status}`)}
-    currentArticle=normalizeArticleResponse(await res.json());saveAndRenderArticle();setView('reader');toast('Analisis artikel selesai ✓');
+    setAiProgressStep('vocab');
+    currentArticle=normalizeArticleResponse({...await res.json(),source:'Tempel teks',status:'reading'});saveAndRenderArticle();setAiProgressStep('done');
+    setTimeout(()=>finishAiProgress(),350);setView('reader');toast('Analisis artikel selesai ✓');
   }catch(e){
-    console.error('Article analyze failed:',e);
-    currentArticle={title,category:'Custom',paragraphs:text.split(/\n\s*\n/).filter(Boolean).map(p=>({jp:p,furigana:'',id:'',highlights:[],vocabDetails:[]}))};saveAndRenderArticle();toast('AI gagal dihubungi. Teks tetap dimuat secara lokal.');
-  }finally{btn.disabled=false;btn.textContent='Analisis dengan AI'}
+    if(e.name==='AbortError'){toast('Analisis dibatalkan');finishAiProgress();return}
+    console.error('Article analyze failed:',e);finishAiProgress();
+    currentArticle=normalizeArticleResponse({title,category:'Custom',source:'Tempel teks (lokal)',paragraphs:text.split(/\n\s*\n/).filter(Boolean).map(p=>({jp:p,furigana:'',id:'',highlights:[],vocabDetails:[]}))});saveAndRenderArticle();toast('AI gagal. Teks tetap dimuat secara lokal.');
+  }finally{btn.disabled=false;btn.textContent='Analisis dengan AI';aiAbortController=null}
 }
 
 async function importUrlArticle(){
   const url=$('#articleUrlInput').value.trim();if(!url){toast('Masukkan URL artikel');return}
+  if(!navigator.onLine){toast('Mode offline: import URL membutuhkan internet');return}
   const btn=$('#importUrlBtn');btn.disabled=true;btn.textContent='Mengambil artikel...';
+  aiAbortController=new AbortController();startAiProgress('url');
   try{
-    const res=await fetch(apiUrl('/api/import-url'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
-    if(!res.ok)throw new Error(await res.text());currentArticle=normalizeArticleResponse(await res.json());saveAndRenderArticle();setView('reader');toast('URL berhasil diimpor & dianalisis ✓');
-  }catch(e){console.error('URL import failed:',e);toast('URL gagal diambil. Coba tab Tempel teks.')}finally{btn.disabled=false;btn.textContent='Ambil & Analisis Artikel'}
+    const res=await fetch(apiUrl('/api/import-url'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url}),signal:aiAbortController.signal});
+    if(!res.ok){const detail=await res.text();throw new Error(detail||`Import HTTP ${res.status}`)}
+    setAiProgressStep('vocab');
+    currentArticle=normalizeArticleResponse({...await res.json(),sourceUrl:url,source:'URL',status:'reading'});saveAndRenderArticle();setAiProgressStep('done');
+    setTimeout(()=>finishAiProgress(),350);setView('reader');toast('URL berhasil diimpor & dianalisis ✓');
+  }catch(e){
+    if(e.name==='AbortError'){toast('Import URL dibatalkan');finishAiProgress();return}
+    console.error('URL import failed:',e);finishAiProgress();
+    let msg='URL gagal diambil.';try{const parsed=JSON.parse(e.message);msg=parsed?.message||parsed?.error||msg}catch{}
+    toast(msg.length>95?msg.slice(0,92)+'…':msg+' Coba Tempel teks.');
+  }finally{btn.disabled=false;btn.textContent='Ambil & Analisis Artikel';aiAbortController=null}
 }
 
-function applyReaderToggles(){
-  const b=$('#articleBody');b.classList.toggle('hide-furigana',!$('#furiganaToggle').checked);b.classList.toggle('hide-translation',!$('#translationToggle').checked);b.classList.toggle('no-highlight',!$('#aiHighlightToggle').checked)
+function applyReaderToggles(save=true){
+  const b=$('#articleBody');if(!b)return;
+  b.classList.toggle('hide-furigana',!$('#furiganaToggle').checked);b.classList.toggle('hide-translation',!$('#translationToggle').checked);b.classList.toggle('no-highlight',!$('#aiHighlightToggle').checked);
+  if(save){settings.furigana=$('#furiganaToggle').checked;settings.translation=$('#translationToggle').checked;settings.highlight=$('#aiHighlightToggle').checked;saveSettings();}
 }
 function initReaderControls(){
-  ['furiganaToggle','translationToggle','aiHighlightToggle'].forEach(id=>$('#'+id).addEventListener('change',applyReaderToggles));
+  $('#furiganaToggle').checked=settings.furigana;$('#translationToggle').checked=settings.translation;$('#aiHighlightToggle').checked=settings.highlight;
+  ['furiganaToggle','translationToggle','aiHighlightToggle'].forEach(id=>$('#'+id).addEventListener('change',()=>applyReaderToggles(true)));
   $('#fontMinus').addEventListener('click',()=>setReaderFont(readerFont-1));$('#fontPlus').addEventListener('click',()=>setReaderFont(readerFont+1));
-  $('#saveArticleBtn').addEventListener('click',()=>toast('Artikel sudah tersimpan lokal ✓'));
+  $('#saveArticleBtn').addEventListener('click',()=>{if(!currentArticle)return;currentArticle.favorite=!currentArticle.favorite;saveAndRenderArticle();toast(currentArticle.favorite?'Ditambahkan ke Favorit ★':'Dihapus dari Favorit')});
 }
-function setReaderFont(n){readerFont=Math.max(16,Math.min(30,n));localStorage.setItem(STORAGE.font,String(readerFont));document.documentElement.style.setProperty('--reader-size',readerFont+'px');$('#fontSizeLabel').textContent=readerFont+'px'}
+function setReaderFont(n){readerFont=Math.max(16,Math.min(30,n));localStorage.setItem(STORAGE.font,String(readerFont));settings.font=readerFont;saveSettings();document.documentElement.style.setProperty('--reader-size',readerFont+'px');$('#fontSizeLabel').textContent=readerFont+'px';if($('#settingFontSize')){$('#settingFontSize').value=readerFont;$('#settingFontLabel').textContent=readerFont+'px'}}
 
 function renderVocab(){
   const q=($('#vocabSearch')?.value||'').trim().toLowerCase();const items=vocabBank.filter(v=>`${v.word} ${v.reading} ${v.meaning}`.toLowerCase().includes(q));
   if(!items.length){$('#vocabGrid').innerHTML='<div class="panel empty-state"><h3>Vocabulary Bank masih kosong</h3><p>Tap kata di Reader lalu tekan “Tambah ke Vocabulary”.</p></div>';return}
   $('#vocabGrid').innerHTML=items.map(v=>`<article class="vocab-card"><div class="word">${escapeHTML(v.word)}</div><div class="kana">${escapeHTML(v.reading)}</div><div class="gloss">${escapeHTML(v.meaning)}</div><div class="tag-row" style="justify-content:flex-start"><span>${escapeHTML(v.jlpt||'?')}</span>${v.register?`<span>${escapeHTML(v.register)}</span>`:''}</div><div class="context">${escapeHTML(v.context||'')}</div><div class="actions"><button class="text-btn speak-vocab" data-id="${v.id}">🔊 Dengar</button><button class="danger-text delete-vocab" data-id="${v.id}">Hapus</button></div></article>`).join('');
   $$('.delete-vocab').forEach(b=>b.addEventListener('click',()=>{vocabBank=vocabBank.filter(v=>v.id!==b.dataset.id);saveVocab();renderVocab()}));
-  $$('.speak-vocab').forEach(b=>b.addEventListener('click',()=>{const v=vocabBank.find(x=>x.id===b.dataset.id);if(v){const u=new SpeechSynthesisUtterance(v.word);u.lang='ja-JP';u.rate=.82;speechSynthesis.speak(u)}}));
+  $$('.speak-vocab').forEach(b=>b.addEventListener('click',()=>{const v=vocabBank.find(x=>x.id===b.dataset.id);if(v){const u=new SpeechSynthesisUtterance(v.word);u.lang='ja-JP';u.rate=.82;u.volume=(settings.ttsVolume||85)/100;speechSynthesis.speak(u)}}));
 }
 function saveVocab(){localStorage.setItem(STORAGE.vocab,JSON.stringify(vocabBank));updateStats();renderPracticeSummary()}
 
@@ -433,7 +491,7 @@ function rateFlash(rating){
   else if(rating==='hard'){practiceState.correct++;markWeak(v.id,1)}
   else {practiceState.correct++;markWeak(v.id,-1)}
   recordActivity(`Flashcard ${v.word}: ${rating}`);
-  practiceState.flashIndex=(practiceState.flashIndex+1)%Math.max(1,flashOrder.length);flashRevealed=false;savePracticeState();renderFlashcard();
+  updateSrs(v.id,rating);touchStreak();practiceState.flashIndex=(practiceState.flashIndex+1)%Math.max(1,flashOrder.length);flashRevealed=false;savePracticeState();renderFlashcard();renderDailyReview();
 }
 function updateQuizBest(){if($('#quizBest'))$('#quizBest').textContent=`Best ${practiceState.bestQuiz||0}%`}
 function startQuiz(){
@@ -515,29 +573,119 @@ function updateStats(){
   const id=localStorage.getItem(STORAGE.theme)||'sakura';$('#statTheme').textContent=(themes.find(t=>t.id===id)||themes[0]).name;renderContinue();
 }
 
-function ensureAudio(){if(!audioCtx){audioCtx=new (window.AudioContext||window.webkitAudioContext)();masterGain=audioCtx.createGain();masterGain.gain.value=Number($('#audioVolume').value)/100;masterGain.connect(audioCtx.destination)}if(audioCtx.state==='suspended')audioCtx.resume()}
+function ensureAudio(){if(!audioCtx){audioCtx=new (window.AudioContext||window.webkitAudioContext)();masterGain=audioCtx.createGain();masterGain.gain.value=(settings.bgmVolume||25)/100;masterGain.connect(audioCtx.destination)}if(audioCtx.state==='suspended')audioCtx.resume()}
 function stopSynth(){if(soundTimer){clearInterval(soundTimer);soundTimer=null}activeNodes.forEach(n=>{try{n.stop()}catch{}});activeNodes=[];$$('.sound-card').forEach(b=>b.classList.toggle('active',b.dataset.sound===selectedSound));updateAudioStatus()}
 function playSynth(){stopAllAudio(false);ensureAudio();let step=0;const notes={lofi:[261.63,329.63,392,493.88],rain:[174.61,220,261.63,329.63],train:[130.81,196,146.83,220],forest:[293.66,392,329.63,440]}[selectedSound];const interval={lofi:650,rain:900,train:520,forest:1050}[selectedSound];
   const tick=()=>{if(!audioCtx)return;const osc=audioCtx.createOscillator(),g=audioCtx.createGain();osc.type=selectedSound==='lofi'?'sine':'triangle';osc.frequency.value=notes[step%notes.length];g.gain.setValueAtTime(0.0001,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(selectedSound==='rain'?0.018:0.035,audioCtx.currentTime+.03);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+.5);osc.connect(g);g.connect(masterGain);osc.start();osc.stop(audioCtx.currentTime+.55);activeNodes.push(osc);step++};tick();soundTimer=setInterval(tick,interval);updateAudioStatus()}
 function stopAllAudio(resetLocal=true){stopSynth();if(localAudio&&resetLocal){localAudio.pause();localAudio.currentTime=0}updateAudioStatus()}
 function updateAudioStatus(){const on=!!soundTimer||!!(localAudio&&!localAudio.paused);$('#audioStatus').textContent=on?'ON':'OFF';$('#audioToggleBtn').textContent=on?'⏸ Pause Focus':'▶ Play Focus';updateStats()}
 function initAudio(){
-  $$('.sound-card').forEach(b=>b.addEventListener('click',()=>{selectedSound=b.dataset.sound;$$('.sound-card').forEach(x=>x.classList.toggle('active',x===b));toast(`${b.querySelector('b').textContent} dipilih`)}));
-  $$('.sound-card')[0]?.classList.add('active');
+  $$('.sound-card').forEach(b=>b.addEventListener('click',()=>{selectedSound=b.dataset.sound;settings.selectedSound=selectedSound;saveSettings();$$('.sound-card').forEach(x=>x.classList.toggle('active',x===b));toast(`${b.querySelector('b').textContent} dipilih`)}));
+  $$('.sound-card').forEach(b=>b.classList.toggle('active',b.dataset.sound===selectedSound));
   $('#audioToggleBtn').addEventListener('click',()=>{if(soundTimer){stopSynth()}else if(localAudio&&!localAudio.paused){localAudio.pause();updateAudioStatus()}else playSynth()});
   $('#audioStopBtn').addEventListener('click',()=>stopAllAudio(true));
-  $('#audioVolume').addEventListener('input',e=>{if(masterGain)masterGain.gain.value=Number(e.target.value)/100;if(localAudio)localAudio.volume=Number(e.target.value)/100});
-  $('#localAudioInput').addEventListener('change',e=>{const file=e.target.files?.[0];if(!file)return;stopAllAudio(true);if(localAudio&&localAudio._url)URL.revokeObjectURL(localAudio._url);const url=URL.createObjectURL(file);localAudio=new Audio(url);localAudio._url=url;localAudio.loop=true;localAudio.volume=Number($('#audioVolume').value)/100;localAudio.play().then(()=>{toast(`Memutar ${file.name}`);updateAudioStatus()}).catch(()=>toast('Tap Play Focus untuk mulai audio'));localAudio.onpause=updateAudioStatus;localAudio.onplay=updateAudioStatus});
+  $('#audioVolume').value=settings.bgmVolume||25;$('#audioVolume').addEventListener('input',e=>{settings.bgmVolume=Number(e.target.value);saveSettings();if(masterGain)masterGain.gain.value=settings.bgmVolume/100;if(localAudio)localAudio.volume=settings.bgmVolume/100;if($('#settingBgmVolume')){$('#settingBgmVolume').value=settings.bgmVolume;$('#settingBgmLabel').textContent=settings.bgmVolume+'%'}});
+  $('#localAudioInput').addEventListener('change',e=>{const file=e.target.files?.[0];if(!file)return;stopAllAudio(true);if(localAudio&&localAudio._url)URL.revokeObjectURL(localAudio._url);const url=URL.createObjectURL(file);localAudio=new Audio(url);localAudio._url=url;localAudio.loop=true;localAudio.volume=(settings.bgmVolume||25)/100;localAudio.play().then(()=>{toast(`Memutar ${file.name}`);updateAudioStatus()}).catch(()=>toast('Tap Play Focus untuk mulai audio'));localAudio.onpause=updateAudioStatus;localAudio.onplay=updateAudioStatus});
 }
 
+function showUpdateBanner(reg){
+  updateRegistration=reg||updateRegistration;$('#updateBanner')?.classList.remove('hidden');
+}
+function hideUpdateBanner(){ $('#updateBanner')?.classList.add('hidden') }
 function initInstall(){
   window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;$('#installBtn').classList.remove('hidden')});
   $('#installBtn').addEventListener('click',async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$('#installBtn').classList.add('hidden')});
-  if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));
+  $('#applyUpdateBtn')?.addEventListener('click',()=>{const waiting=updateRegistration?.waiting;if(waiting)waiting.postMessage({type:'SKIP_WAITING'})});
+  $('#dismissUpdateBtn')?.addEventListener('click',hideUpdateBanner);
+  $('#checkUpdateBtn')?.addEventListener('click',async()=>{if(updateRegistration){await updateRegistration.update();toast(updateRegistration.waiting?'Update tersedia':'Sudah versi terbaru')}else toast('Service Worker belum aktif')});
+  if('serviceWorker'in navigator)window.addEventListener('load',async()=>{
+    try{
+      const reg=await navigator.serviceWorker.register('./service-worker.js');updateRegistration=reg;
+      if(reg.waiting)showUpdateBanner(reg);
+      reg.addEventListener('updatefound',()=>{const w=reg.installing;if(!w)return;w.addEventListener('statechange',()=>{if(w.state==='installed'&&navigator.serviceWorker.controller)showUpdateBanner(reg)})});
+      let refreshing=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(refreshing)return;refreshing=true;location.reload()});
+      setInterval(()=>reg.update().catch(()=>{}),60*60*1000);
+    }catch(e){console.warn('SW register failed',e)}
+  });
 }
 
+
+function saveSettings(){localStorage.setItem(STORAGE.settings,JSON.stringify(settings))}
+function saveArticles(){localStorage.setItem(STORAGE.articles,JSON.stringify(articles))}
+function upsertArticle(article){
+  if(!article)return;const copy=JSON.parse(JSON.stringify(article));
+  const i=articles.findIndex(a=>a.id===copy.id || (copy.sourceUrl&&a.sourceUrl===copy.sourceUrl) || (!copy.sourceUrl&&a.title===copy.title));
+  if(i>=0){copy.favorite=copy.favorite||articles[i].favorite;copy.createdAt=articles[i].createdAt||copy.createdAt;copy.status=copy.status||articles[i].status;articles[i]=copy}else articles.unshift(copy);
+  articles.sort((a,b)=>new Date(b.lastOpenedAt||b.updatedAt||0)-new Date(a.lastOpenedAt||a.updatedAt||0));articles=articles.slice(0,80);saveArticles();
+}
+function renderArticleLibrary(){
+  const box=$('#articleLibraryList');if(!box)return;
+  const list=(articleLibraryFilter==='favorite'?articles.filter(a=>a.favorite):articles).slice(0,12);
+  if(!list.length){box.innerHTML='<div class="practice-empty"><h3>Library masih kosong</h3><p>Artikel yang dianalisis akan otomatis tersimpan di sini.</p></div>';return}
+  box.innerHTML=list.map(a=>`<article class="library-item"><div><div class="library-meta"><span class="pill">${escapeHTML(a.category||'Artikel')}</span><span>${a.status==='done'?'✓ Selesai':'◔ Dibaca'}</span></div><b>${escapeHTML(a.title||'Artikel Jepang')}</b><small>${a.paragraphs?.length||0} paragraf • ${new Date(a.lastOpenedAt||a.updatedAt||Date.now()).toLocaleDateString('id-ID')}</small></div><div class="library-item-actions"><button class="text-btn lib-open" data-id="${a.id}">Buka</button><button class="text-btn lib-done" data-id="${a.id}">${a.status==='done'?'Baca lagi':'Tandai selesai'}</button><button class="text-btn lib-fav" data-id="${a.id}">${a.favorite?'★':'☆'}</button><button class="danger-text lib-delete" data-id="${a.id}">Hapus</button></div></article>`).join('');
+  $$('.lib-open').forEach(b=>b.onclick=()=>{const a=articles.find(x=>x.id===b.dataset.id);if(!a)return;currentArticle=JSON.parse(JSON.stringify(a));currentArticle.lastOpenedAt=new Date().toISOString();saveAndRenderArticle();setView('reader')});
+  $$('.lib-done').forEach(b=>b.onclick=()=>{const a=articles.find(x=>x.id===b.dataset.id);if(!a)return;a.status=a.status==='done'?'reading':'done';a.updatedAt=new Date().toISOString();if(currentArticle?.id===a.id)currentArticle.status=a.status;saveArticles();renderArticleLibrary();renderDailyReview()});
+  $$('.lib-fav').forEach(b=>b.onclick=()=>{const a=articles.find(x=>x.id===b.dataset.id);if(!a)return;a.favorite=!a.favorite;if(currentArticle?.id===a.id)currentArticle.favorite=a.favorite;saveArticles();renderArticleLibrary();renderArticle();});
+  $$('.lib-delete').forEach(b=>b.onclick=()=>{articles=articles.filter(x=>x.id!==b.dataset.id);saveArticles();renderArticleLibrary();toast('Artikel dihapus dari Library')});
+}
+function initArticleLibrary(){
+  $('#showAllArticlesBtn')?.addEventListener('click',()=>{articleLibraryFilter='all';renderArticleLibrary()});
+  $('#showFavoriteArticlesBtn')?.addEventListener('click',()=>{articleLibraryFilter='favorite';renderArticleLibrary()});
+}
+function todayKey(){return new Date().toISOString().slice(0,10)}
+function dueItems(){const now=Date.now();return vocabBank.filter(v=>{const s=practiceState.srs?.[v.id];return s&&new Date(s.due).getTime()<=now})}
+function newItems(){return vocabBank.filter(v=>!practiceState.srs?.[v.id])}
+function updateSrs(id,rating){
+  practiceState.srs ||= {};const prev=practiceState.srs[id]||{interval:0,reps:0};let days=0;
+  if(rating==='again')days=0.007;else if(rating==='hard')days=Math.max(1,Math.round((prev.interval||1)*1.2));else if(rating==='good')days=Math.max(3,Math.round((prev.interval||1)*2.2));else days=Math.max(7,Math.round((prev.interval||1)*3.5));
+  practiceState.srs[id]={interval:days,reps:(prev.reps||0)+1,lastRating:rating,lastReviewed:new Date().toISOString(),due:new Date(Date.now()+days*86400000).toISOString()};
+  const k=todayKey();if(practiceState.reviewedToday?.date!==k)practiceState.reviewedToday={date:k,count:0};practiceState.reviewedToday.count++;
+}
+function touchStreak(){
+  const k=todayKey(),s=practiceState.streak||{count:0,lastDate:''};if(s.lastDate===k)return;const yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);practiceState.streak={count:s.lastDate===yesterday?(s.count||0)+1:1,lastDate:k};
+}
+function renderDailyReview(){
+  const due=dueItems(),weak=weakItems(),fresh=newItems(),reviewed=practiceState.reviewedToday?.date===todayKey()?(practiceState.reviewedToday.count||0):0;
+  $('#homeDue')&&( $('#homeDue').textContent=due.length );$('#homeWeak')&&( $('#homeWeak').textContent=weak.length );$('#homeNew')&&( $('#homeNew').textContent=fresh.length );$('#homeReviewed')&&( $('#homeReviewed').textContent=reviewed );$('#homeStreak')&&( $('#homeStreak').textContent=practiceState.streak?.count||0 );
+}
+function startDailyReview(){
+  const ids=[...new Set([...dueItems(),...weakItems(),...newItems().slice(0,10)].map(v=>v.id))];if(!ids.length){toast('Review hari ini sudah selesai 🎉');return}
+  flashOrder=ids;practiceState.flashIndex=0;flashRevealed=false;setView('practice');setPracticePane('flashcard');toast(`${ids.length} kartu untuk review hari ini`);
+}
+function startAiProgress(mode){
+  clearInterval(aiProgressTimer);$('#aiProgressModal')?.classList.remove('hidden');$('#aiProgressModal')?.setAttribute('aria-hidden','false');$('#aiProgressTitle').textContent=mode==='url'?'Mengambil & menganalisis URL':'Menganalisis teks Jepang';
+  const order=mode==='url'?['fetch','clean','analyze']:['clean','analyze'];let i=0;setAiProgressStep(order[0]);aiProgressTimer=setInterval(()=>{i=Math.min(i+1,order.length-1);setAiProgressStep(order[i])},1800);
+}
+function setAiProgressStep(step){
+  const order=['fetch','clean','analyze','vocab','done'],idx=order.indexOf(step);$$('#aiProgressSteps [data-step]').forEach((el,i)=>{el.classList.toggle('active',i===idx);el.classList.toggle('done',i<idx)});
+}
+function finishAiProgress(){clearInterval(aiProgressTimer);aiProgressTimer=null;setTimeout(()=>{$('#aiProgressModal')?.classList.add('hidden');$('#aiProgressModal')?.setAttribute('aria-hidden','true')},120)}
+function initAiProgress(){ $('#cancelAiBtn')?.addEventListener('click',()=>{aiAbortController?.abort();finishAiProgress()}) }
+function updateNetworkState(){
+  const online=navigator.onLine,txt=online?'Online':'Offline';$('#networkStatus')&&( $('#networkStatus').textContent=txt );$('#settingsNetworkStatus')&&( $('#settingsNetworkStatus').textContent=txt );document.body.classList.toggle('offline-mode',!online);
+  const a=$('#analyzeTextBtn'),u=$('#importUrlBtn');if(a){a.disabled=!online;a.title=online?'':'Butuh internet untuk AI'}if(u){u.disabled=!online;u.title=online?'':'Butuh internet untuk import URL'}
+  if(online)checkBackendHealth();else checkBackendHealth();
+}
+function renderSettings(){
+  if(!$('#settingFurigana'))return;$('#settingFurigana').checked=settings.furigana;$('#settingTranslation').checked=settings.translation;$('#settingHighlight').checked=settings.highlight;$('#settingFontSize').value=readerFont;$('#settingFontLabel').textContent=readerFont+'px';
+  for(const [id,key] of [['settingBgmVolume','bgmVolume'],['settingTtsVolume','ttsVolume'],['settingSfxVolume','sfxVolume']]){const el=$('#'+id);if(el){el.value=settings[key];$('#'+id.replace('Volume','Label')).textContent=settings[key]+'%'}}
+  $('#settingsNetworkStatus').textContent=navigator.onLine?'Online':'Offline';
+}
+function initSettings(){
+  $('#settingFurigana')?.addEventListener('change',e=>{$('#furiganaToggle').checked=e.target.checked;applyReaderToggles(true)});$('#settingTranslation')?.addEventListener('change',e=>{$('#translationToggle').checked=e.target.checked;applyReaderToggles(true)});$('#settingHighlight')?.addEventListener('change',e=>{$('#aiHighlightToggle').checked=e.target.checked;applyReaderToggles(true)});
+  $('#settingFontSize')?.addEventListener('input',e=>setReaderFont(Number(e.target.value)));
+  for(const [id,key,label] of [['settingBgmVolume','bgmVolume','settingBgmLabel'],['settingTtsVolume','ttsVolume','settingTtsLabel'],['settingSfxVolume','sfxVolume','settingSfxLabel']])$('#'+id)?.addEventListener('input',e=>{settings[key]=Number(e.target.value);saveSettings();$('#'+label).textContent=settings[key]+'%';if(key==='bgmVolume'){$('#audioVolume').value=settings[key];if(masterGain)masterGain.gain.value=settings[key]/100;if(localAudio)localAudio.volume=settings[key]/100}});
+  $('#exportBackupBtn')?.addEventListener('click',exportBackup);$('#importBackupBtn')?.addEventListener('click',()=>$('#backupFileInput').click());$('#backupFileInput')?.addEventListener('change',importBackup);$('#resetProgressBtn')?.addEventListener('click',()=>{if(!confirm('Reset semua progress Practice, Weak List, SRS dan streak? Vocabulary dan artikel tidak dihapus.'))return;practiceState={...defaultPracticeState,weak:{},activities:[],srs:{},streak:{count:0,lastDate:''},reviewedToday:{date:'',count:0}};savePracticeState();renderPractice();renderDailyReview();toast('Progress Practice direset')});
+}
+function exportBackup(){
+  const data={app:'GoiScope',version:APP_VERSION,exportedAt:new Date().toISOString(),data:{theme:localStorage.getItem(STORAGE.theme)||'sakura',vocab:vocabBank,lookups:lookupCount,currentArticle,articles,practice:practiceState,settings}};const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`goiscope-backup-${todayKey()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast('Backup berhasil dibuat')
+}
+async function importBackup(e){
+  const file=e.target.files?.[0];if(!file)return;try{const obj=JSON.parse(await file.text()),d=obj.data||obj;if(!Array.isArray(d.vocab))throw new Error('Format backup tidak cocok');vocabBank=d.vocab;articles=Array.isArray(d.articles)?d.articles:[];practiceState={...defaultPracticeState,...(d.practice||{})};settings={...defaultSettings,...(d.settings||{})};lookupCount=Number(d.lookups||0);currentArticle=d.currentArticle||null;localStorage.setItem(STORAGE.vocab,JSON.stringify(vocabBank));saveArticles();savePracticeState();saveSettings();localStorage.setItem(STORAGE.lookups,String(lookupCount));if(currentArticle)localStorage.setItem(STORAGE.article,JSON.stringify(currentArticle));if(d.theme)applyTheme(d.theme);readerFont=Number(settings.font||20);setReaderFont(readerFont);renderArticle();renderVocab();renderPractice();renderArticleLibrary();renderDailyReview();renderSettings();toast('Backup berhasil dipulihkan')}catch(err){console.error(err);toast('Backup gagal dibaca')}finally{e.target.value=''}
+}
 function init(){
-  applyTheme(localStorage.getItem(STORAGE.theme)||'sakura');initNav();initSourceTabs();initLookup();initReaderControls();initPractice();initAudio();initInstall();
-  $('#vocabSearch').addEventListener('input',renderVocab);setReaderFont(readerFont);renderArticle();renderVocab();renderPractice();updateStats();checkBackendHealth();
+  applyTheme(localStorage.getItem(STORAGE.theme)||'sakura');initNav();initSourceTabs();initLookup();initReaderControls();initPractice();initAudio();initInstall();initArticleLibrary();initSettings();initAiProgress();
+  $('#startDailyReviewBtn')?.addEventListener('click',startDailyReview);window.addEventListener('online',updateNetworkState);window.addEventListener('offline',updateNetworkState);
+  $('#vocabSearch').addEventListener('input',renderVocab);setReaderFont(readerFont);renderArticle();renderVocab();renderPractice();renderArticleLibrary();renderDailyReview();renderSettings();updateStats();updateNetworkState();
 }
 init();
